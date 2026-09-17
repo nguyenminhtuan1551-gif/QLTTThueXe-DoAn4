@@ -8,13 +8,14 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
+  StatusBar,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
 import { Input, Button } from '../../components';
 import { COLORS } from '../../constants/colors';
-import { RADIUS, SPACING } from '../../constants/theme';
+import { RADIUS, SHADOWS, SPACING } from '../../constants/theme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
@@ -24,6 +25,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [cccd, setCccd] = useState('');
   const [driverLicense, setDriverLicense] = useState('');
   const [address, setAddress] = useState('');
@@ -33,15 +35,18 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const validate = () => {
     const errs: Record<string, string> = {};
 
-    if (!fullName.trim()) errs.fullName = 'Vui lòng nhập họ và tên';
+    if (!fullName.trim()) {
+      errs.fullName = 'Vui lòng nhập họ và tên';
+    }
+
     if (!phone.trim()) {
       errs.phone = 'Vui lòng nhập số điện thoại';
     } else if (!/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(phone.trim())) {
-      errs.phone = 'Số điện thoại không hợp lệ';
+      errs.phone = 'Số điện thoại Việt Nam không hợp lệ (ví dụ: 0912345678)';
     }
 
     if (!email.trim()) {
-      errs.email = 'Vui lòng nhập email';
+      errs.email = 'Vui lòng nhập địa chỉ email';
     } else if (!/\S+@\S+\.\S+/.test(email.trim())) {
       errs.email = 'Email không đúng định dạng';
     }
@@ -52,8 +57,21 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       errs.password = 'Mật khẩu phải từ 6 ký tự trở lên';
     }
 
-    if (!address.trim()) errs.address = 'Vui lòng nhập địa chỉ cư trú';
-    if (!driverLicense.trim()) errs.driverLicense = 'Vui lòng nhập số GPLX (Bằng lái xe)';
+    if (confirmPassword !== password) {
+      errs.confirmPassword = 'Mật khẩu xác nhận không trùng khớp';
+    }
+
+    if (cccd.trim() && !/^[0-9]{9,12}$/.test(cccd.trim())) {
+      errs.cccd = 'Số CCCD/CMND phải gồm 9 đến 12 chữ số';
+    }
+
+    if (!driverLicense.trim()) {
+      errs.driverLicense = 'Vui lòng nhập số Giấy phép lái xe (GPLX)';
+    }
+
+    if (!address.trim()) {
+      errs.address = 'Vui lòng nhập địa chỉ thường trú / tạm trú';
+    }
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -73,9 +91,16 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
         driverLicense: driverLicense.trim(),
         address: address.trim(),
       });
-      Alert.alert('Thành công', 'Đăng ký tài khoản thành công!');
+      Alert.alert(
+        'Đăng ký thành công',
+        'Chào mừng bạn đến với hệ thống Thuê Xe Tự Lái & Có Tài!',
+        [{ text: 'Bắt đầu ngay' }]
+      );
     } catch (err: any) {
-      Alert.alert('Đăng ký thất bại', err.message || 'Không thể đăng ký tài khoản.');
+      Alert.alert(
+        'Đăng ký thất bại',
+        err.message || 'Không thể tạo tài khoản. Vui lòng thử lại.'
+      );
     } finally {
       setLoading(false);
     }
@@ -83,21 +108,31 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.keyboardView}
     >
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Đăng Ký Tài Khoản</Text>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.backBtnText}>‹ Quay lại</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Tạo Tài Khoản Mới</Text>
           <Text style={styles.subtitle}>
-            Trở thành thành viên để tận hưởng dịch vụ thuê xe tự lái tiện lợi
+            Điền đầy đủ thông tin để hoàn tất hồ sơ đăng ký thuê xe
           </Text>
         </View>
 
         <View style={styles.card}>
+          <Text style={styles.groupTitle}>Thông tin cá nhân</Text>
+
           <Input
             label="Họ và Tên *"
             placeholder="Nguyễn Văn A"
@@ -134,9 +169,11 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
             error={errors.email}
           />
 
+          <Text style={styles.groupTitle}>Bảo mật & Giấy tờ</Text>
+
           <Input
             label="Mật Khẩu *"
-            placeholder="••••••••"
+            placeholder="Tối thiểu 6 ký tự"
             isPassword
             value={password}
             onChangeText={(v) => {
@@ -147,15 +184,31 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
           />
 
           <Input
-            label="Số CCCD / CMND"
-            placeholder="001201012345 (Tùy chọn)"
-            keyboardType="number-pad"
-            value={cccd}
-            onChangeText={setCccd}
+            label="Xác Nhận Mật Khẩu *"
+            placeholder="Nhập lại mật khẩu"
+            isPassword
+            value={confirmPassword}
+            onChangeText={(v) => {
+              setConfirmPassword(v);
+              if (errors.confirmPassword) setErrors((p) => ({ ...p, confirmPassword: '' }));
+            }}
+            error={errors.confirmPassword}
           />
 
           <Input
-            label="Giấy phép lái xe (GPLX) *"
+            label="Số CCCD / CMND"
+            placeholder="001201012345 (9 - 12 chữ số)"
+            keyboardType="number-pad"
+            value={cccd}
+            onChangeText={(v) => {
+              setCccd(v);
+              if (errors.cccd) setErrors((p) => ({ ...p, cccd: '' }));
+            }}
+            error={errors.cccd}
+          />
+
+          <Input
+            label="Số Giấy phép lái xe (GPLX) *"
             placeholder="B2 - 0123456789"
             value={driverLicense}
             onChangeText={(v) => {
@@ -166,8 +219,8 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
           />
 
           <Input
-            label="Địa chỉ thường trú *"
-            placeholder="Số nhà, Đường, Quận, Hà Nội"
+            label="Địa chỉ cư trú *"
+            placeholder="Số nhà, đường, phường, quận, Hà Nội"
             value={address}
             onChangeText={(v) => {
               setAddress(v);
@@ -177,7 +230,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
           />
 
           <Button
-            title="Đăng Ký Ngay"
+            title="Đăng Ký Tài Khoản"
             onPress={handleRegister}
             loading={loading}
             size="lg"
@@ -203,22 +256,33 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: SPACING.lg,
-    paddingTop: SPACING.xl,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.xxl,
   },
   header: {
-    alignItems: 'center',
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
+  },
+  backBtn: {
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingHorizontal: 2,
+    marginBottom: SPACING.sm,
+  },
+  backBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.primary,
   },
   title: {
     fontSize: 24,
     fontWeight: '800',
     color: COLORS.textPrimary,
-    marginBottom: SPACING.xs,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.textSecondary,
-    textAlign: 'center',
+    lineHeight: 18,
   },
   card: {
     backgroundColor: COLORS.white,
@@ -226,10 +290,19 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.xl,
     borderWidth: 1,
     borderColor: COLORS.border,
-    marginBottom: SPACING.xl,
+    ...SHADOWS.card,
+  },
+  groupTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.primaryDark,
+    marginTop: SPACING.xs,
+    marginBottom: SPACING.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   registerBtn: {
-    marginTop: SPACING.sm,
+    marginTop: SPACING.md,
     marginBottom: SPACING.md,
   },
   loginPrompt: {

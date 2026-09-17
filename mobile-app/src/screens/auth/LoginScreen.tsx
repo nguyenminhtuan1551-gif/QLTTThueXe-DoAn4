@@ -8,13 +8,14 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
+  StatusBar,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
 import { Input, Button } from '../../components';
 import { COLORS } from '../../constants/colors';
-import { RADIUS, SPACING } from '../../constants/theme';
+import { RADIUS, SHADOWS, SPACING } from '../../constants/theme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -28,9 +29,9 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const validate = () => {
     const errs: { email?: string; password?: string } = {};
     if (!email.trim()) {
-      errs.email = 'Vui lòng nhập email';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      errs.email = 'Email không đúng định dạng';
+      errs.email = 'Vui lòng nhập địa chỉ email';
+    } else if (!/\S+@\S+\.\S+/.test(email.trim())) {
+      errs.email = 'Email không đúng định dạng (ví dụ: khachhang@gmail.com)';
     }
 
     if (!password) {
@@ -52,7 +53,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     } catch (err: any) {
       Alert.alert(
         'Đăng nhập thất bại',
-        err.message || 'Email hoặc mật khẩu không chính xác.'
+        err.message || 'Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.'
       );
     } finally {
       setLoading(false);
@@ -61,23 +62,28 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.keyboardView}
     >
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
+        {/* Brand Header */}
         <View style={styles.header}>
           <View style={styles.logoBadge}>
             <Text style={styles.logoIcon}>🚗</Text>
           </View>
-          <Text style={styles.title}>Chào mừng bạn!</Text>
+          <Text style={styles.appName}>HỆ THỐNG THUÊ XE HÀ NỘI</Text>
+          <Text style={styles.title}>Đăng Nhập Tài Khoản</Text>
           <Text style={styles.subtitle}>
-            Đăng nhập để đặt xe và quản lý hợp đồng thuê xe nhanh chóng
+            Trải nghiệm dịch vụ thuê xe tự lái và có tài xế uy tín hàng đầu
           </Text>
         </View>
 
+        {/* Form Card */}
         <View style={styles.card}>
           <Input
             label="Địa chỉ Email"
@@ -94,7 +100,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
           <Input
             label="Mật khẩu"
-            placeholder="••••••••"
+            placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
             value={password}
             onChangeText={(val) => {
               setPassword(val);
@@ -113,16 +119,37 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
           />
 
           <View style={styles.registerPrompt}>
-            <Text style={styles.registerPromptText}>Chưa có tài khoản? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <Text style={styles.registerPromptText}>Chưa có tài khoản khách hàng? </Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate('Register')}
+            >
               <Text style={styles.registerLink}>Đăng ký ngay</Text>
             </TouchableOpacity>
           </View>
         </View>
 
+        {/* Feature quick badges */}
+        <View style={styles.featureRow}>
+          <View style={styles.featureItem}>
+            <Text style={styles.featureIcon}>⚡</Text>
+            <Text style={styles.featureText}>Giao xe nhanh</Text>
+          </View>
+          <View style={styles.featureDivider} />
+          <View style={styles.featureItem}>
+            <Text style={styles.featureIcon}>🛡️</Text>
+            <Text style={styles.featureText}>Bảo hiểm 100%</Text>
+          </View>
+          <View style={styles.featureDivider} />
+          <View style={styles.featureItem}>
+            <Text style={styles.featureIcon}>📋</Text>
+            <Text style={styles.featureText}>Hợp đồng minh bạch</Text>
+          </View>
+        </View>
+
         <View style={styles.footerNote}>
           <Text style={styles.footerNoteText}>
-            Dành cho Quản trị viên / Nhân viên: vui lòng sử dụng cổng Web Admin
+            Dành cho Quản trị viên / Nhân viên: vui lòng sử dụng Cổng Quản Trị Web Admin
           </Text>
         </View>
       </ScrollView>
@@ -139,22 +166,32 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     padding: SPACING.lg,
+    paddingVertical: SPACING.xl,
   },
   header: {
     alignItems: 'center',
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   logoBadge: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: COLORS.primaryMuted,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
+    borderWidth: 2,
+    borderColor: '#BFDBFE',
   },
   logoIcon: {
-    fontSize: 32,
+    fontSize: 36,
+  },
+  appName: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.primary,
+    letterSpacing: 1.2,
+    marginBottom: 4,
   },
   title: {
     fontSize: 24,
@@ -163,10 +200,11 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.textSecondary,
     textAlign: 'center',
     paddingHorizontal: SPACING.md,
+    lineHeight: 18,
   },
   card: {
     backgroundColor: COLORS.white,
@@ -174,6 +212,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.xl,
     borderWidth: 1,
     borderColor: COLORS.border,
+    ...SHADOWS.card,
   },
   loginBtn: {
     marginTop: SPACING.sm,
@@ -193,13 +232,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  footerNote: {
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
     marginTop: SPACING.xl,
+    paddingVertical: SPACING.sm,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  featureIcon: {
+    fontSize: 14,
+  },
+  featureText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  featureDivider: {
+    width: 1,
+    height: 14,
+    backgroundColor: COLORS.border,
+  },
+  footerNote: {
+    marginTop: SPACING.lg,
     alignItems: 'center',
   },
   footerNoteText: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.placeholder,
     textAlign: 'center',
+    paddingHorizontal: SPACING.md,
   },
 });
