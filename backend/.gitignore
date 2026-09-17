@@ -1,0 +1,9 @@
+node_modules/
+.env
+npm-debug.log*
+uploads/cars/*
+uploads/contracts/*
+uploads/customers/*
+!uploads/cars/.gitkeep
+!uploads/contracts/.gitkeep
+!uploads/customers/.gitkeep
