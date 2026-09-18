@@ -1,5 +1,5 @@
 import axiosClient from './axiosClient';
-import { ApiResponse, Contract } from '../types';
+import { ApiResponse, Contract, LookupResponseData } from '../types';
 
 export const contractApi = {
   /**
@@ -10,7 +10,14 @@ export const contractApi = {
   },
 
   /**
-   * Tạo hợp đồng thuê xe mới (hỗ trợ đính kèm hình ảnh)
+   * Lấy chi tiết hợp đồng theo mã hợp đồng
+   */
+  getContractById: async (id: string): Promise<ApiResponse<Contract>> => {
+    return axiosClient.get(`/contracts/${id}`);
+  },
+
+  /**
+   * Tạo hợp đồng thuê xe mới (hỗ trợ đính kèm hình ảnh qua FormData)
    */
   createBooking: async (formData: FormData): Promise<ApiResponse<Contract>> => {
     return axiosClient.post('/contracts', formData, {
@@ -21,13 +28,13 @@ export const contractApi = {
   },
 
   /**
-   * Tra cứu thông tin hợp đồng không cần đăng nhập
+   * Tra cứu thông tin hợp đồng độc lập (Mã HĐ, CCCD hoặc SĐT)
    */
   lookupContract: async (params: {
     contractId?: string;
+    cccd?: string;
     phone?: string;
-    licensePlate?: string;
-  }): Promise<ApiResponse<Contract[]>> => {
+  }): Promise<ApiResponse<LookupResponseData>> => {
     return axiosClient.get('/contracts/lookup', { params });
   },
 };

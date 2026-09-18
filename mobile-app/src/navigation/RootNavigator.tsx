@@ -4,8 +4,11 @@ import { RootStackParamList } from './types';
 import { useAuth } from '../context/AuthContext';
 import { AuthNavigator } from './AuthNavigator';
 import { MainTabNavigator } from './MainTabNavigator';
-import { CarDetailScreen } from '../screens/car/CarDetailScreen';
+import { CarDetailScreen } from '../screens/cars/CarDetailScreen';
 import { BookingScreen } from '../screens/booking/BookingScreen';
+import { BookingSuccessScreen } from '../screens/booking/BookingSuccessScreen';
+import { RentalDetailScreen } from '../screens/rentals/RentalDetailScreen';
+import { LookupScreen } from '../screens/lookup/LookupScreen';
 import { Loading } from '../components';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -37,7 +40,27 @@ export const RootNavigator: React.FC = () => {
           <Stack.Screen
             name="Booking"
             component={BookingScreen}
-            options={{ presentation: 'modal' }}
+            options={{ presentation: 'card' }}
+          />
+          <Stack.Screen
+            name="BookingSuccess"
+            component={BookingSuccessScreen}
+            options={{ presentation: 'card', gestureEnabled: false }}
+          />
+          <Stack.Screen
+            name="RentalDetail"
+            component={RentalDetailScreen}
+            options={{ presentation: 'card' }}
+          />
+          <Stack.Screen
+            name="ContractDetail"
+            component={RentalDetailScreen}
+            options={{ presentation: 'card' }}
+          />
+          <Stack.Screen
+            name="Lookup"
+            component={LookupScreen}
+            options={{ presentation: 'card' }}
           />
         </>
       )}
