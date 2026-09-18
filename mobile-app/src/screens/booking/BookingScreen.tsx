@@ -112,38 +112,46 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const takePhoto = async () => {
-    const cameraPerm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!cameraPerm.granted) {
-      Alert.alert('Cấp quyền máy ảnh', 'Vui lòng cấp quyền truy cập Camera để chụp ảnh giấy tờ.');
-      return;
-    }
+    try {
+      const cameraPerm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!cameraPerm.granted) {
+        Alert.alert('Cấp quyền máy ảnh', 'Vui lòng cấp quyền truy cập Camera để chụp ảnh giấy tờ.');
+        return;
+      }
 
-    const result = await ImagePicker.launchCameraAsync({
-      quality: 0.8,
-      allowsEditing: false,
-    });
+      const result = await ImagePicker.launchCameraAsync({
+        quality: 0.8,
+        allowsEditing: false,
+      });
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setImages((prev) => [...prev, ...result.assets].slice(0, 6));
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setImages((prev) => [...prev, ...result.assets].slice(0, 6));
+      }
+    } catch (err: any) {
+      console.warn('Lỗi khi mở camera:', err);
     }
   };
 
   const pickImagesFromLibrary = async () => {
-    const mediaPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!mediaPerm.granted) {
-      Alert.alert('Cấp quyền thư viện', 'Vui lòng cấp quyền truy cập thư viện ảnh để tải ảnh lên.');
-      return;
-    }
+    try {
+      const mediaPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!mediaPerm.granted) {
+        Alert.alert('Cấp quyền thư viện', 'Vui lòng cấp quyền truy cập thư viện ảnh để tải ảnh lên.');
+        return;
+      }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
-      quality: 0.8,
-      selectionLimit: 6 - images.length,
-    });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        quality: 0.8,
+        selectionLimit: 6 - images.length,
+      });
 
-    if (!result.canceled && result.assets) {
-      setImages((prev) => [...prev, ...result.assets].slice(0, 6));
+      if (!result.canceled && result.assets) {
+        setImages((prev) => [...prev, ...result.assets].slice(0, 6));
+      }
+    } catch (err: any) {
+      console.warn('Lỗi khi mở thư viện ảnh:', err);
     }
   };
 
