@@ -15,6 +15,7 @@ export const COLORS = {
 
   danger: '#EF4444', // Red
   dangerLight: '#FEE2E2',
+  error: '#EF4444',
 
   info: '#0284C7', // Sky Blue
   infoLight: '#E0F2FE',

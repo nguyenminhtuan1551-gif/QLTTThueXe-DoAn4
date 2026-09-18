@@ -53,11 +53,6 @@ export const RootNavigator: React.FC = () => {
             options={{ presentation: 'card' }}
           />
           <Stack.Screen
-            name="ContractDetail"
-            component={RentalDetailScreen}
-            options={{ presentation: 'card' }}
-          />
-          <Stack.Screen
             name="Lookup"
             component={LookupScreen}
             options={{ presentation: 'card' }}
