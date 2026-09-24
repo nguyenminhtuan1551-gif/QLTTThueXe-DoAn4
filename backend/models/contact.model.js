@@ -17,20 +17,7 @@ async function findAll() {
   );
 }
 
-async function create(payload) {
-  const result = await query(
-    `
-      INSERT INTO LienHe (
-        HoTen,
-        SDT,
-        Email,
-        NoiDung,
-        TrangThai
-      ) VALUES (?, ?, ?, ?, 'Mới')
-    `,
-    [payload.fullName, payload.phone, payload.email, payload.message],
-  );
-
+async function findById(id) {
   const rows = await query(
     `
       SELECT
@@ -45,13 +32,45 @@ async function create(payload) {
       WHERE MaLH = ?
       LIMIT 1
     `,
-    [result.insertId],
+    [id],
   );
 
   return rows[0] || null;
 }
 
+async function create(payload) {
+  const result = await query(
+    `
+      INSERT INTO LienHe (
+        HoTen,
+        SDT,
+        Email,
+        NoiDung,
+        TrangThai
+      ) VALUES (?, ?, ?, ?, 'Mới')
+    `,
+    [payload.fullName, payload.phone, payload.email, payload.message],
+  );
+
+  return findById(result.insertId);
+}
+
+async function updateStatus(id, status) {
+  await query(
+    `
+      UPDATE LienHe
+      SET TrangThai = ?
+      WHERE MaLH = ?
+    `,
+    [status, id],
+  );
+
+  return findById(id);
+}
+
 module.exports = {
   findAll,
+  findById,
   create,
+  updateStatus,
 };

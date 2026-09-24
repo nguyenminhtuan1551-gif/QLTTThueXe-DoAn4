@@ -10,8 +10,16 @@ export const contractService = {
     return axiosClient.get(`/contracts/${id}`);
   },
 
+  createContract: async (data: any): Promise<ApiResponse<Contract>> => {
+    return axiosClient.post('/contracts', data);
+  },
+
   updateContract: async (id: string, data: Partial<Contract>): Promise<ApiResponse<Contract>> => {
     return axiosClient.put(`/contracts/${id}`, data);
+  },
+
+  approveContract: async (id: string): Promise<ApiResponse<Contract>> => {
+    return axiosClient.put(`/contracts/${id}`, { status: 'Đang hiệu lực' });
   },
 
   cancelContract: async (id: string, reason?: string): Promise<ApiResponse<Contract>> => {

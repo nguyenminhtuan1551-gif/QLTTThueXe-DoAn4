@@ -8,3 +8,6 @@ export * from './employeeService';
 export * from './inspectionService';
 export * from './maintenanceService';
 export * from './settingsService';
+export * from './returnService';
+export * from './penaltyService';
+export * from './contactService';

@@ -39,7 +39,25 @@ const create = asyncHandler(async (req, res) => {
   });
 });
 
+const updateStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  const existing = await ContactModel.findById(id);
+  if (!existing) {
+    throw createError('Không tìm thấy tin nhắn liên hệ.', 404);
+  }
+
+  const updated = await ContactModel.updateStatus(id, status || 'Đã phản hồi');
+
+  sendSuccess(res, {
+    data: updated,
+    message: 'Cập nhật trạng thái liên hệ thành công.',
+  });
+});
+
 module.exports = {
   list,
   create,
+  updateStatus,
 };
