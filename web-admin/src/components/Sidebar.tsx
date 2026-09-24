@@ -7,6 +7,8 @@ import {
   LayoutDashboard,
   Car,
   FileText,
+  ClipboardCheck,
+  Wrench,
   Users,
   UserCheck,
   Settings,
@@ -19,18 +21,20 @@ export const Sidebar: React.FC = () => {
   const { user, isAdmin } = useAuth();
 
   const navigation = [
-    { name: 'Tổng quan', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Quản lý Xe', href: '/cars', icon: Car },
-    { name: 'Hợp đồng thuê', href: '/contracts', icon: FileText },
-    { name: 'Khách hàng', href: '/customers', icon: Users },
+    { name: 'Dashboard Tổng quan', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Quản lý Đội xe', href: '/cars', icon: Car },
+    { name: 'Hồ sơ Đăng kiểm', href: '/inspection', icon: ClipboardCheck },
+    { name: 'Bảo trì & Sửa chữa', href: '/maintenance', icon: Wrench },
+    { name: 'Hợp đồng thuê xe', href: '/contracts', icon: FileText },
+    { name: 'Danh sách Khách hàng', href: '/customers', icon: Users },
     ...(isAdmin
-      ? [{ name: 'Nhân viên', href: '/employees', icon: UserCheck }]
+      ? [{ name: 'Quản lý Nhân sự', href: '/employees', icon: UserCheck }]
       : []),
     { name: 'Cài đặt hệ thống', href: '/settings', icon: Settings },
   ];
 
   return (
-    <aside className="w-64 bg-slate-900 text-white min-h-screen flex flex-col border-r border-slate-800">
+    <aside className="w-64 bg-slate-900 text-white min-h-screen flex flex-col border-r border-slate-800 shrink-0">
       {/* Brand Header */}
       <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-800 bg-slate-950">
         <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-lg text-white shadow-md">
@@ -43,7 +47,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 px-3 py-6 space-y-1">
+      <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
         {navigation.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;

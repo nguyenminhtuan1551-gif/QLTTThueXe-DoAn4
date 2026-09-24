@@ -5,3 +5,6 @@ export * from './contractService';
 export * from './dashboardService';
 export * from './customerService';
 export * from './employeeService';
+export * from './inspectionService';
+export * from './maintenanceService';
+export * from './settingsService';

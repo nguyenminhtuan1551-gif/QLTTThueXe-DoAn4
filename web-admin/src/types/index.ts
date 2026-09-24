@@ -12,6 +12,9 @@ export interface ApiResponse<T = any> {
   success: boolean;
   message?: string;
   data: T;
+  meta?: {
+    total?: number;
+  };
   pagination?: {
     page: number;
     limit: number;
@@ -33,7 +36,50 @@ export interface Car {
   status: 'Sẵn sàng' | 'Đang thuê' | 'Bảo trì';
   image?: string;
   notes?: string;
+  inspectionId?: string;
+  inspectionDate?: string;
+  inspectionExpiryDate?: string;
+  inspectionStatus?: string;
   createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Inspection {
+  id: string;
+  carId: string;
+  carName?: string;
+  carPlate?: string;
+  inspectionDate: string;
+  expiryDate: string;
+  status: 'Còn hạn' | 'Sắp hết hạn' | 'Hết hạn';
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Maintenance {
+  id: string;
+  carId: string;
+  carName?: string;
+  carPlate?: string;
+  date: string;
+  content: string;
+  cost: number;
+  status: 'Đang bảo trì' | 'Hoàn thành';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SystemSettings {
+  id?: string;
+  companyName: string;
+  phone: string;
+  email: string;
+  address: string;
+  notifEmail?: boolean;
+  notifExpiry?: boolean;
+  notifContract?: boolean;
+  daysWarning: number;
   updatedAt?: string;
 }
 
