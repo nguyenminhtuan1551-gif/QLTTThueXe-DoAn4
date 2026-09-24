@@ -1,8 +1,24 @@
 import axiosClient from './axiosClient';
-import { ApiResponse, DashboardStats } from '../types';
+import {
+  ApiResponse,
+  DashboardSummaryData,
+  DashboardAlerts,
+  RevenueReportData,
+} from '../types';
 
 export const dashboardService = {
-  getStats: async (): Promise<ApiResponse<DashboardStats>> => {
-    return axiosClient.get('/dashboard');
+  getSummary: async (): Promise<ApiResponse<DashboardSummaryData>> => {
+    return axiosClient.get('/dashboard/summary');
+  },
+
+  getAlerts: async (): Promise<ApiResponse<DashboardAlerts>> => {
+    return axiosClient.get('/dashboard/alerts');
+  },
+
+  getRevenueReport: async (params: {
+    fromDate: string;
+    toDate: string;
+  }): Promise<ApiResponse<RevenueReportData>> => {
+    return axiosClient.get('/dashboard/revenue-report', { params });
   },
 };

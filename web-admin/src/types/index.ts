@@ -181,13 +181,92 @@ export interface Employee {
   createdAt?: string;
 }
 
-export interface DashboardStats {
+export interface DashboardOverview {
   totalCars: number;
   availableCars: number;
   rentingCars: number;
   maintenanceCars: number;
+  totalCustomers: number;
   totalContracts: number;
-  pendingContracts: number;
   activeContracts: number;
-  totalRevenue: number;
+  monthlyRevenue: number;
+}
+
+export interface MonthRevenueItem {
+  month: string;
+  revenue: number;
+  rentals: number;
+}
+
+export interface CarStatusPieItem {
+  name: string;
+  value: number;
+}
+
+export interface RecentActivity {
+  type: 'contract' | 'return';
+  createdAt: string;
+  message: string;
+}
+
+export interface DashboardAlerts {
+  expiringInspections: Array<{
+    id: string;
+    carId: string;
+    carName: string;
+    carPlate: string;
+    expiryDate: string;
+    status: string;
+  }>;
+  dueContracts: Array<{
+    id: string;
+    customerName: string;
+    carName: string;
+    expectedReturnDate: string;
+  }>;
+  carsInMaintenance: Array<{
+    id: string;
+    carId: string;
+    carName: string;
+    carPlate: string;
+    content: string;
+    status: string;
+  }>;
+}
+
+export interface DashboardSummaryData {
+  overview: DashboardOverview;
+  revenueByMonth: MonthRevenueItem[];
+  carStatusBreakdown: CarStatusPieItem[];
+  recentActivities: RecentActivity[];
+  alerts: DashboardAlerts;
+}
+
+export interface RevenueReportItem {
+  carId: string;
+  carName: string;
+  carPlate: string;
+  rentals: number;
+  revenue: number;
+  maintenanceCost: number;
+  maintenanceCount: number;
+  penaltyFee: number;
+  penaltyCount: number;
+  totalAmount: number;
+}
+
+export interface RevenueReportSummary {
+  cars: number;
+  rentals: number;
+  revenue: number;
+  maintenanceCost: number;
+  penaltyFee: number;
+  totalAmount: number;
+}
+
+export interface RevenueReportData {
+  fromDate: string;
+  toDate: string;
+  items: RevenueReportItem[];
+  summary: RevenueReportSummary;
 }

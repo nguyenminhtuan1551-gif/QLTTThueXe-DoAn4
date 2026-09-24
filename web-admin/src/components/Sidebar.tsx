@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   ClipboardCheck,
   Wrench,
+  BarChart3,
   Users,
   MessageSquare,
   UserCheck,
@@ -31,6 +32,7 @@ export const Sidebar: React.FC = () => {
     { name: 'Biên bản Phí phạt', href: '/penalties', icon: AlertTriangle },
     { name: 'Hồ sơ Đăng kiểm', href: '/inspection', icon: ClipboardCheck },
     { name: 'Bảo trì & Sửa chữa', href: '/maintenance', icon: Wrench },
+    { name: 'Báo cáo Doanh thu', href: '/reports', icon: BarChart3 },
     { name: 'Quản lý Khách hàng', href: '/customers', icon: Users },
     { name: 'Hộp thư Liên hệ', href: '/contacts', icon: MessageSquare },
     ...(isAdmin
@@ -53,7 +55,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
         {navigation.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
@@ -62,7 +64,7 @@ export const Sidebar: React.FC = () => {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-white'
