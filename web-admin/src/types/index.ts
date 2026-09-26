@@ -36,6 +36,7 @@ export interface Car {
   status: 'Sẵn sàng' | 'Đang thuê' | 'Bảo trì';
   image?: string;
   notes?: string;
+  location?: string;
   inspectionId?: string;
   inspectionDate?: string;
   inspectionExpiryDate?: string;

@@ -21,6 +21,7 @@ export interface Car {
   publicStatus?: string;
   image?: string;
   notes?: string;
+  location?: string; // Khu vực / Địa điểm bãi xe (Cầu Giấy, Nam Từ Liêm, Hà Nội,...)
   createdAt?: string;
   updatedAt?: string;
 
@@ -49,6 +50,7 @@ export interface CarFilterParams {
   seatCount?: number;
   fuelType?: string;
   status?: string;
+  location?: string;
   minPrice?: number;
   maxPrice?: number;
   search?: string;

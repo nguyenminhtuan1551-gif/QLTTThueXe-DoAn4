@@ -38,12 +38,30 @@ const initialFilterState: FilterState = {
   status: 'Tất cả',
 };
 
+const HANOI_DISTRICTS = [
+  'Tất cả khu vực',
+  'Hà Nội',
+  'Cầu Giấy',
+  'Nam Từ Liêm',
+  'Đống Đa',
+  'Ba Đình',
+  'Hà Đông',
+  'Thanh Xuân',
+  'Hoàn Kiếm',
+  'Tây Hồ',
+  'Long Biên',
+  'Hai Bà Trưng',
+  'Nội Bài',
+];
+
 export const CarListScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const [cars, setCars] = useState<Car[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
+  const [locationSearch, setLocationSearch] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('Tất cả khu vực');
   const [selectedBrand, setSelectedBrand] = useState('Tất cả');
 
   // Advanced Filter Modal State
@@ -129,6 +147,8 @@ export const CarListScreen: React.FC = () => {
     setFilters(initialFilterState);
     setSelectedBrand('Tất cả');
     setSearch('');
+    setLocationSearch('');
+    setSelectedDistrict('Tất cả khu vực');
     setFilterModalVisible(false);
   };
 
@@ -143,29 +163,41 @@ export const CarListScreen: React.FC = () => {
         if (!matchName && !matchBrand && !matchPlate) return false;
       }
 
-      // 2. Quick Brand Chip Filter
+      // 2. Location / Address search filter
+      if (locationSearch.trim()) {
+        const locQuery = locationSearch.toLowerCase().trim();
+        const carLoc = (car.location || '').toLowerCase();
+        // If user typed "Hà Nội", match any car in Hanoi
+        if (locQuery === 'hà nội' || locQuery === 'ha noi') {
+          if (!carLoc.includes('hà nội') && !carLoc.includes('ha noi')) return false;
+        } else {
+          if (!carLoc.includes(locQuery)) return false;
+        }
+      }
+
+      // 3. Quick Brand Chip Filter
       if (selectedBrand !== 'Tất cả') {
         if (car.brand.toLowerCase() !== selectedBrand.toLowerCase()) return false;
       }
 
-      // 3. Car Type
+      // 4. Car Type
       if (filters.type !== 'Tất cả') {
         if (!car.type.toLowerCase().includes(filters.type.toLowerCase())) return false;
       }
 
-      // 4. Seat Count
+      // 5. Seat Count
       if (filters.seatCount !== null) {
         if (filters.seatCount === 5 && car.seatCount > 5) return false;
         if (filters.seatCount === 7 && (car.seatCount < 7 || car.seatCount > 8)) return false;
         if (filters.seatCount === 9 && car.seatCount < 9) return false;
       }
 
-      // 5. Fuel Type
+      // 6. Fuel Type
       if (filters.fuelType !== 'Tất cả') {
         if (!car.fuelType.toLowerCase().includes(filters.fuelType.toLowerCase())) return false;
       }
 
-      // 6. Price Range
+      // 7. Price Range
       if (filters.priceRange === '<800k' && car.price >= 800000) return false;
       if (
         filters.priceRange === '800k-1.2m' &&
@@ -179,22 +211,23 @@ export const CarListScreen: React.FC = () => {
         return false;
       if (filters.priceRange === '>2m' && car.price <= 2000000) return false;
 
-      // 7. Status Filter
+      // 8. Status Filter
       if (filters.status !== 'Tất cả') {
         if (car.status !== filters.status && car.publicStatus !== filters.status) return false;
       }
 
       return true;
     });
-  }, [cars, search, selectedBrand, filters]);
+  }, [cars, search, locationSearch, selectedBrand, filters]);
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-      <Header title="Danh Mục Xe Cho Thuê" subtitle="Tự lái & có tài xế tại Hà Nội" />
+      <Header title="Danh Mục Xe Cho Thuê" subtitle="Có tài xế phục vụ tại Hà Nội" />
 
       {/* Top Search & Filter Bar */}
       <View style={styles.filterSection}>
+        {/* Name / Keyword Search Row */}
         <View style={styles.searchRow}>
           <View style={styles.searchBox}>
             <Text style={styles.searchIcon}>🔍</Text>
@@ -232,6 +265,74 @@ export const CarListScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
+        {/* Location / Address Search Row */}
+        <View style={styles.locationSearchRow}>
+          <View style={styles.locationSearchBox}>
+            <Text style={styles.locationIcon}>📍</Text>
+            <TextInput
+              placeholder="Tìm theo địa chỉ, khu vực (Cầu Giấy, Nam Từ Liêm, Hà Nội...)"
+              placeholderTextColor={COLORS.placeholder}
+              value={locationSearch}
+              onChangeText={(text) => {
+                setLocationSearch(text);
+                setSelectedDistrict(text || 'Tất cả khu vực');
+              }}
+              style={styles.locationInput}
+              clearButtonMode="while-editing"
+            />
+            {locationSearch ? (
+              <TouchableOpacity
+                onPress={() => {
+                  setLocationSearch('');
+                  setSelectedDistrict('Tất cả khu vực');
+                }}
+              >
+                <Text style={styles.clearBtn}>✕</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+
+        {/* Quick Hanoi District Pills */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.districtRow}
+        >
+          {HANOI_DISTRICTS.map((district) => {
+            const isSelected =
+              (district === 'Tất cả khu vực' && !locationSearch) ||
+              (district !== 'Tất cả khu vực' &&
+                (locationSearch.toLowerCase().includes(district.toLowerCase()) ||
+                  selectedDistrict === district));
+
+            return (
+              <TouchableOpacity
+                key={district}
+                style={[styles.districtChip, isSelected && styles.districtChipActive]}
+                onPress={() => {
+                  if (district === 'Tất cả khu vực') {
+                    setSelectedDistrict('Tất cả khu vực');
+                    setLocationSearch('');
+                  } else {
+                    setSelectedDistrict(district);
+                    setLocationSearch(district);
+                  }
+                }}
+              >
+                <Text
+                  style={[
+                    styles.districtChipText,
+                    isSelected && styles.districtChipTextActive,
+                  ]}
+                >
+                  📍 {district}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
         {/* Brand Scroll Chips */}
         <ScrollView
           horizontal
@@ -264,8 +365,9 @@ export const CarListScreen: React.FC = () => {
       <View style={styles.summaryBar}>
         <Text style={styles.summaryText}>
           Tìm thấy <Text style={styles.summaryHighlight}>{filteredCars.length}</Text> xe phù hợp
+          {locationSearch ? ` tại "${locationSearch}"` : ''}
         </Text>
-        {(search || selectedBrand !== 'Tất cả' || activeFilterCount > 0) && (
+        {(search || locationSearch || selectedBrand !== 'Tất cả' || activeFilterCount > 0) && (
           <TouchableOpacity onPress={resetAllFilters}>
             <Text style={styles.resetFilterText}>Xóa tất cả lọc ✕</Text>
           </TouchableOpacity>
@@ -291,7 +393,7 @@ export const CarListScreen: React.FC = () => {
           ListEmptyComponent={
             <EmptyState
               title="Không tìm thấy xe phù hợp"
-              description="Hãy thử điều chỉnh bộ lọc hoặc tìm kiếm với từ khóa khác."
+              description="Hãy thử điều chỉnh địa chỉ tìm kiếm hoặc xóa các tiêu chí lọc."
               actionTitle="Đặt lại tất cả bộ lọc"
               onAction={resetAllFilters}
             />
@@ -496,7 +598,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.inputBorder,
     paddingHorizontal: SPACING.sm,
-    height: 42,
+    height: 40,
   },
   searchIcon: {
     fontSize: 15,
@@ -517,7 +619,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F1F5F9',
     paddingHorizontal: 12,
-    height: 42,
+    height: 40,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -538,13 +640,63 @@ const styles = StyleSheet.create({
   filterBtnTextActive: {
     color: COLORS.primary,
   },
+  locationSearchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  locationSearchBox: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: SPACING.sm,
+    height: 38,
+  },
+  locationIcon: {
+    fontSize: 14,
+    marginRight: 6,
+  },
+  locationInput: {
+    flex: 1,
+    fontSize: 12,
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+  },
+  districtRow: {
+    gap: SPACING.xs,
+    paddingVertical: 3,
+  },
+  districtChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: RADIUS.full,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  districtChipActive: {
+    backgroundColor: '#0284C7',
+    borderColor: '#0284C7',
+  },
+  districtChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  districtChipTextActive: {
+    color: COLORS.white,
+    fontWeight: '700',
+  },
   brandRow: {
     gap: SPACING.xs,
-    paddingVertical: 6,
+    paddingVertical: 4,
   },
   brandChip: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: RADIUS.full,
     backgroundColor: '#F1F5F9',
   },
@@ -572,6 +724,7 @@ const styles = StyleSheet.create({
   summaryText: {
     fontSize: 12,
     color: COLORS.textSecondary,
+    flex: 1,
   },
   summaryHighlight: {
     fontWeight: '800',
@@ -581,6 +734,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: COLORS.error,
+    marginLeft: SPACING.sm,
   },
   listContent: {
     padding: SPACING.md,

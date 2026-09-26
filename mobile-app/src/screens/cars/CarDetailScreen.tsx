@@ -132,6 +132,11 @@ export const CarDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                   <Text style={styles.plateBadgeText}>{car.licensePlate}</Text>
                 </View>
               </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
+                <Text style={{ fontSize: 13, color: '#0369A1', fontWeight: '700' }}>
+                  📍 {car.location || 'Khu vực Hà Nội'}
+                </Text>
+              </View>
             </View>
             <View style={styles.headerPriceCol}>
               <Text style={styles.pricePerDay}>{formatCurrency(car.price)}</Text>

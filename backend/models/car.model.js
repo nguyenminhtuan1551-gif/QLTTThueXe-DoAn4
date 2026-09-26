@@ -124,6 +124,39 @@ async function findOpenSchedulesByCarIds(carIds = []) {
   }, new Map());
 }
 
+const HANOI_CAR_LOCATIONS = {
+  XE001: 'Quận Cầu Giấy, Hà Nội',
+  XE002: 'Quận Nam Từ Liêm, Hà Nội',
+  XE003: 'Quận Đống Đa, Hà Nội',
+  XE004: 'Quận Ba Đình, Hà Nội',
+  XE005: 'Quận Cầu Giấy, Hà Nội',
+  XE006: 'Quận Thanh Xuân, Hà Nội',
+  XE007: 'Quận Nam Từ Liêm, Hà Nội',
+  XE008: 'Quận Hà Đông, Hà Nội',
+  XE009: 'Quận Hoàn Kiếm, Hà Nội',
+  XE010: 'Quận Tây Hồ, Hà Nội',
+  XE011: 'Quận Cầu Giấy, Hà Nội',
+  XE012: 'Sân bay Nội Bài, Sóc Sơn, Hà Nội',
+  XE013: 'Quận Long Biên, Hà Nội',
+  XE014: 'Quận Hai Bà Trưng, Hà Nội',
+  XE015: 'Quận Đống Đa, Hà Nội',
+  XE016: 'Quận Ba Đình, Hà Nội',
+  XE017: 'Quận Nam Từ Liêm, Hà Nội',
+  XE018: 'Quận Hoàn Kiếm, Hà Nội',
+  XE019: 'Quận Tây Hồ, Hà Nội',
+  XE020: 'Quận Cầu Giấy, Hà Nội',
+};
+
+function resolveCarLocation(car) {
+  if (car.notes) {
+    const match = car.notes.match(/\[Khu vực:\s*([^\]]+)\]/i) || car.notes.match(/Khu vực:\s*([^|;\n]+)/i);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  }
+  return HANOI_CAR_LOCATIONS[car.id] || 'Quận Cầu Giấy, Hà Nội';
+}
+
 function enrichCars(cars, scheduleMap, requestedRange = null) {
   const today = toDateKey(new Date());
 
@@ -140,6 +173,7 @@ function enrichCars(cars, scheduleMap, requestedRange = null) {
       ? bookingSchedules.some((schedule) => hasScheduleOverlap(schedule, requestedRange))
       : false;
     const isInspectionExpired = car.inspectionStatus === INSPECTION_STATUS_EXPIRED;
+    const location = resolveCarLocation(car);
 
     let publicStatus = car.status;
 
@@ -151,6 +185,7 @@ function enrichCars(cars, scheduleMap, requestedRange = null) {
 
     return {
       ...car,
+      location,
       publicStatus,
       bookingSchedules,
       nextBookedStartDate: nextBooking?.startDate || null,
@@ -217,9 +252,16 @@ async function findAll(filters = {}) {
   const scheduleMap = await findOpenSchedulesByCarIds(cars.map((car) => car.id));
   const enrichedCars = enrichCars(cars, scheduleMap, requestedRange);
 
-  return requestedRange
+  let result = requestedRange
     ? enrichedCars.filter((car) => !car.hasBookingConflict)
     : enrichedCars;
+
+  if (filters.location && filters.location.trim()) {
+    const locKeyword = filters.location.trim().toLowerCase();
+    result = result.filter((car) => (car.location || '').toLowerCase().includes(locKeyword));
+  }
+
+  return result;
 }
 
 async function findById(id) {
@@ -296,6 +338,10 @@ async function findFeatured(limit = 6) {
 }
 
 async function create(payload) {
+  const formattedNotes = payload.location
+    ? `[Khu vực: ${payload.location}] ${payload.notes || ''}`.trim()
+    : (payload.notes || '');
+
   await query(
     `
       INSERT INTO Xe (
@@ -325,7 +371,7 @@ async function create(payload) {
       payload.seatCount,
       payload.status,
       payload.image || null,
-      payload.notes || '',
+      formattedNotes,
     ],
   );
 
@@ -333,6 +379,9 @@ async function create(payload) {
 }
 
 async function update(id, payload) {
+  const formattedNotes = payload.location
+    ? `[Khu vực: ${payload.location}] ${payload.notes || ''}`.trim()
+    : (payload.notes || '');
   await query(
     `
       UPDATE Xe
@@ -362,7 +411,7 @@ async function update(id, payload) {
       payload.seatCount,
       payload.status,
       payload.image || null,
-      payload.notes || '',
+      formattedNotes,
       id,
     ],
   );

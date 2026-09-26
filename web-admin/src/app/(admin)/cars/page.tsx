@@ -39,6 +39,7 @@ interface CarFormData {
   seatCount: number;
   status: 'Sẵn sàng' | 'Đang thuê' | 'Bảo trì';
   notes?: string;
+  location?: string;
 }
 
 const initialFormData: CarFormData = {
@@ -52,6 +53,7 @@ const initialFormData: CarFormData = {
   seatCount: 5,
   status: 'Sẵn sàng',
   notes: '',
+  location: 'Quận Cầu Giấy, Hà Nội',
 };
 
 export default function CarsPage() {
@@ -117,7 +119,8 @@ export default function CarsPage() {
       const matchName = car.name?.toLowerCase().includes(q);
       const matchBrand = car.brand?.toLowerCase().includes(q);
       const matchPlate = car.licensePlate?.toLowerCase().includes(q);
-      if (!matchName && !matchBrand && !matchPlate) return false;
+      const matchLoc = car.location?.toLowerCase().includes(q);
+      if (!matchName && !matchBrand && !matchPlate && !matchLoc) return false;
     }
 
     if (statusFilter !== 'Tất cả' && car.status !== statusFilter) {
@@ -151,6 +154,7 @@ export default function CarsPage() {
       seatCount: car.seatCount || 5,
       status: car.status || 'Sẵn sàng',
       notes: car.notes || '',
+      location: car.location || 'Quận Cầu Giấy, Hà Nội',
     });
     setModalOpen(true);
   };
@@ -396,6 +400,9 @@ export default function CarsPage() {
                               <p className="text-xs text-slate-400">
                                 {car.brand} • {car.type}
                               </p>
+                              <p className="text-[11px] text-blue-600 font-semibold mt-0.5">
+                                📍 {car.location || 'Khu vực Hà Nội'}
+                              </p>
                             </div>
                           </div>
                         </td>
@@ -622,6 +629,19 @@ export default function CarsPage() {
                     <option value="Đang thuê">Đang thuê (Đang phục vụ khách hàng)</option>
                     <option value="Bảo trì">Bảo trì (Tạm ngừng nhận đơn)</option>
                   </select>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Khu Vực / Bãi Đỗ Xe Tại Hà Nội
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ví dụ: Quận Cầu Giấy, Hà Nội..."
+                    value={formData.location || ''}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-blue-500"
+                  />
                 </div>
 
                 <div className="sm:col-span-2">

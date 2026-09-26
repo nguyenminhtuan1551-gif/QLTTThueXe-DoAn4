@@ -45,7 +45,7 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 const create = asyncHandler(async (req, res) => {
-  const { id, licensePlate, name, type, brand, year, price, fuelType, seatCount, status, image, notes } = req.body;
+  const { id, licensePlate, name, type, brand, year, price, fuelType, seatCount, status, image, notes, location } = req.body;
 
   if (!licensePlate || !name || !type || !brand || !year || !price || !fuelType || !seatCount || !status) {
     throw createError('Vui lòng nhập đầy đủ thông tin xe.', 400);
@@ -64,6 +64,7 @@ const create = asyncHandler(async (req, res) => {
     status,
     image,
     notes,
+    location,
   });
 
   sendSuccess(res, {
@@ -92,6 +93,7 @@ const update = asyncHandler(async (req, res) => {
     status: req.body.status ?? existingCar.status,
     image: req.body.image ?? existingCar.image,
     notes: req.body.notes ?? existingCar.notes,
+    location: req.body.location ?? existingCar.location,
   });
 
   sendSuccess(res, {

@@ -58,6 +58,12 @@ export const CarCard: React.FC<CarCardProps> = ({ car, onPress, style }) => {
           {car.name}
         </Text>
 
+        <View style={styles.locationRow}>
+          <Text style={styles.locationText} numberOfLines={1}>
+            📍 {car.location || 'Khu vực Hà Nội'}
+          </Text>
+        </View>
+
         <View style={styles.specsRow}>
           <View style={styles.specItem}>
             <Text style={styles.specLabel}>Số chỗ:</Text>
@@ -136,7 +142,17 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: COLORS.textPrimary,
-    marginBottom: 6,
+    marginBottom: 4,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  locationText: {
+    fontSize: 12,
+    color: '#0369A1',
+    fontWeight: '600',
   },
   specsRow: {
     flexDirection: 'row',
