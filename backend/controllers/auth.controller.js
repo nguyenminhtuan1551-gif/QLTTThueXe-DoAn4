@@ -112,6 +112,9 @@ const customerRegister = asyncHandler(async (req, res) => {
     fullName: createdCustomer.fullName,
     email: createdCustomer.email,
     phone: createdCustomer.phone,
+    cccd: createdCustomer.cccd || '',
+    driverLicense: createdCustomer.driverLicense || '',
+    address: createdCustomer.address || '',
     role: 'Customer',
     scope: 'customer',
   };
@@ -158,6 +161,9 @@ const customerLogin = asyncHandler(async (req, res) => {
     fullName: customer.fullName,
     email: customer.email,
     phone: customer.phone,
+    cccd: customer.cccd || '',
+    driverLicense: customer.driverLicense || '',
+    address: customer.address || '',
     role: 'Customer',
     scope: 'customer',
   };
@@ -180,8 +186,24 @@ const me = asyncHandler(async (req, res) => {
     throw createError('Chưa có phiên đăng nhập.', 401);
   }
 
+  let profile = req.currentUser;
+  if (req.currentUser.scope === 'customer') {
+    const customer = await CustomerModel.findById(req.currentUser.id);
+    if (customer) {
+      profile = {
+        ...req.currentUser,
+        fullName: customer.fullName,
+        email: customer.email,
+        phone: customer.phone,
+        cccd: customer.cccd || '',
+        driverLicense: customer.driverLicense || '',
+        address: customer.address || '',
+      };
+    }
+  }
+
   sendSuccess(res, {
-    data: req.currentUser,
+    data: profile,
     message: 'Lấy thông tin phiên đăng nhập thành công.',
   });
 });

@@ -174,7 +174,7 @@ export const HomeScreen: React.FC = () => {
             <View style={styles.promoPill}>
               <Text style={styles.promoPillText}>🚗 DỊCH VỤ THUÊ XE UY TÍN HÀ NỘI</Text>
             </View>
-            <Text style={styles.heroTitle}>Thuê Xe Tự Lái & Có Tài</Text>
+            <Text style={styles.heroTitle}>Thuê Xe Có Tài Xế</Text>
             <Text style={styles.heroSubtitle}>
               Giao xe tận nơi • Thủ tục 5 phút • Đăng kiểm & bảo hiểm 100%
             </Text>

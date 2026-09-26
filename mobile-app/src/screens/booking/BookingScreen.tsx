@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -50,9 +50,11 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [phone, setPhone] = useState(user?.phone || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [cccd, setCccd] = useState(user?.cccd || '');
-  const [driverLicense, setDriverLicense] = useState(user?.driverLicense || '');
-  const [address, setAddress] = useState(user?.address || 'Hà Nội');
+
+  // Locked Profile fields from account
+  const accountCccd = user?.cccd || '001201012345';
+  const accountDriverLicense = user?.driverLicense || 'B2 - 0123456789';
+  const accountAddress = user?.address || 'Hà Nội';
 
   // Images state
   const [images, setImages] = useState<ImagePicker.ImagePickerAsset[]>([]);
@@ -63,15 +65,15 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
   const [dateModalVisible, setDateModalVisible] = useState(false);
   const [targetDateField, setTargetDateField] = useState<'start' | 'end'>('start');
 
+  // Image Source Selection Modal (for mobile)
+  const [imageSourceModalVisible, setImageSourceModalVisible] = useState(false);
+
   // Update user profile fields if context changed
   useEffect(() => {
     if (user) {
       if (!fullName) setFullName(user.fullName || '');
       if (!phone) setPhone(user.phone || '');
       if (!email) setEmail(user.email || '');
-      if (!cccd && user.cccd) setCccd(user.cccd);
-      if (!driverLicense && user.driverLicense) setDriverLicense(user.driverLicense);
-      if (!address && user.address) setAddress(user.address);
     }
   }, [user]);
 
@@ -96,19 +98,25 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
     }).format(val || 0);
   };
 
-  // Image Picker Handler: Chụp ảnh hoặc chọn từ thư viện
+  // Check if selected rental range conflicts with existing bookings for this car
+  const conflictingSchedule = useMemo(() => {
+    const schedules = car.bookingSchedules || [];
+    if (!schedules.length) return null;
+    return schedules.find((sched) => {
+      if (!sched.startDate || !sched.endDate) return false;
+      return sched.startDate <= expectedReturnDate && sched.endDate >= startDate;
+    });
+  }, [car.bookingSchedules, startDate, expectedReturnDate]);
+
+  // Image Picker Trigger
   const handleSelectImageSource = () => {
-    Alert.alert('Tải ảnh hồ sơ', 'Chọn nguồn tải ảnh giấy tờ / bằng lái xe (Tối đa 6 ảnh)', [
-      {
-        text: '📸 Chụp ảnh ngay',
-        onPress: takePhoto,
-      },
-      {
-        text: '🖼️ Chọn từ Album',
-        onPress: pickImagesFromLibrary,
-      },
-      { text: 'Hủy', style: 'cancel' },
-    ]);
+    if (Platform.OS === 'web') {
+      // On Web/PC: Open file picker directly without native Alert buttons
+      pickImagesFromLibrary();
+      return;
+    }
+    // On Mobile (iOS/Android): Open modal for camera or library choice
+    setImageSourceModalVisible(true);
   };
 
   const takePhoto = async () => {
@@ -134,10 +142,12 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const pickImagesFromLibrary = async () => {
     try {
-      const mediaPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!mediaPerm.granted) {
-        Alert.alert('Cấp quyền thư viện', 'Vui lòng cấp quyền truy cập thư viện ảnh để tải ảnh lên.');
-        return;
+      if (Platform.OS !== 'web') {
+        const mediaPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!mediaPerm.granted) {
+          Alert.alert('Cấp quyền thư viện', 'Vui lòng cấp quyền truy cập thư viện ảnh để tải ảnh lên.');
+          return;
+        }
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -147,7 +157,7 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
         selectionLimit: 6 - images.length,
       });
 
-      if (!result.canceled && result.assets) {
+      if (!result.canceled && result.assets && result.assets.length > 0) {
         setImages((prev) => [...prev, ...result.assets].slice(0, 6));
       }
     } catch (err: any) {
@@ -174,6 +184,10 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
       errs.expectedReturnDate = 'Ngày trả xe dự kiến phải sau hoặc cùng ngày nhận xe';
     }
 
+    if (conflictingSchedule) {
+      errs.startDate = `Xe đã có khách đặt trước từ ${conflictingSchedule.startDate} đến ${conflictingSchedule.endDate}. Vui lòng chọn khoảng ngày khác.`;
+    }
+
     if (!pickupPoint.trim()) {
       errs.pickupPoint = 'Vui lòng nhập điểm đón / nhận xe trong khu vực Hà Nội';
     }
@@ -185,20 +199,20 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
       errs.phone = 'Số điện thoại Việt Nam không đúng định dạng';
     }
 
-    if (!driverLicense.trim()) {
-      errs.driverLicense = 'Vui lòng cung cấp số Giấy phép lái xe (GPLX)';
-    }
-
-    if (!address.trim()) {
-      errs.address = 'Vui lòng nhập địa chỉ cư trú';
-    }
-
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
   // Submit Booking Request
   const handleBookingSubmit = async () => {
+    if (conflictingSchedule) {
+      Alert.alert(
+        'Trùng lịch đặt xe',
+        `Xe này đã được tài khoản khác đặt trước từ ${conflictingSchedule.startDate} đến ${conflictingSchedule.endDate}. Vui lòng chọn khoảng ngày khác để thuê xe.`
+      );
+      return;
+    }
+
     if (!validate()) {
       Alert.alert('Thông tin chưa hoàn tất', 'Vui lòng kiểm tra lại các trường thông tin có đánh dấu đỏ.');
       return;
@@ -214,13 +228,13 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
       formData.append('deposit', String(deposit));
       formData.append('totalAmount', String(totalAmount));
 
-      // Customer payload
+      // Customer payload (CCCD, GPLX, Địa chỉ tự động liên kết cố định từ tài khoản)
       formData.append('fullName', fullName.trim());
       formData.append('phone', phone.trim());
       formData.append('email', email.trim() || (user?.email ?? ''));
-      formData.append('cccd', cccd.trim() || 'Chưa cập nhật');
-      formData.append('driverLicense', driverLicense.trim());
-      formData.append('address', address.trim());
+      formData.append('cccd', accountCccd);
+      formData.append('driverLicense', accountDriverLicense);
+      formData.append('address', accountAddress);
 
       if (notes.trim()) {
         formData.append('notes', notes.trim());
@@ -231,18 +245,21 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
         const uriParts = img.uri.split('.');
         const fileType = uriParts[uriParts.length - 1]?.toLowerCase() || 'jpg';
 
-        const fileObj: any = {
-          uri: Platform.OS === 'ios' ? img.uri.replace('file://', '') : img.uri,
-          name: `booking_doc_${idx + 1}_${Date.now()}.${fileType === 'png' ? 'png' : 'jpg'}`,
-          type: fileType === 'png' ? 'image/png' : 'image/jpeg',
-        };
-        formData.append('pickupImages', fileObj);
+        if (Platform.OS === 'web' && (img as any).file) {
+          formData.append('pickupImages', (img as any).file);
+        } else {
+          const fileObj: any = {
+            uri: Platform.OS === 'ios' ? img.uri.replace('file://', '') : img.uri,
+            name: `booking_doc_${idx + 1}_${Date.now()}.${fileType === 'png' ? 'png' : 'jpg'}`,
+            type: fileType === 'png' ? 'image/png' : 'image/jpeg',
+          };
+          formData.append('pickupImages', fileObj);
+        }
       });
 
       const response = await contractApi.createBooking(formData);
 
       if (response.success && response.data) {
-        // Chuyển hướng sang màn hình BookingSuccess
         navigation.replace('BookingSuccess', { contract: response.data });
       } else {
         throw new Error(response.message || 'Không thể gửi yêu cầu đặt xe.');
@@ -299,6 +316,19 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
             </Text>
           </View>
         </View>
+
+        {/* Conflicting Schedule Warning if dates overlap with another booking */}
+        {conflictingSchedule && (
+          <View style={styles.conflictAlertCard}>
+            <Text style={styles.conflictAlertIcon}>⚠️</Text>
+            <View style={styles.conflictAlertTextWrap}>
+              <Text style={styles.conflictAlertHeading}>Xe Đã Có Khách Đặt Trùng Lịch</Text>
+              <Text style={styles.conflictAlertDesc}>
+                Khoảng ngày <Text style={styles.boldDark}>{conflictingSchedule.startDate} ➔ {conflictingSchedule.endDate}</Text> xe đã được đặt trước ({conflictingSchedule.status}). Vui lòng chọn khoảng ngày khác.
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Rental Time Selection */}
         <View style={styles.sectionCard}>
@@ -361,7 +391,9 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
         <View style={styles.sectionCard}>
           <View style={styles.sectionTitleRow}>
             <Text style={styles.sectionHeaderTitle}>👤 2. Thông Tin Khách Hàng</Text>
-            <Text style={styles.autoFilledBadge}>Tự động điền</Text>
+            <View style={styles.autoFilledBadge}>
+              <Text style={styles.autoFilledBadgeText}>🔒 Tự động từ tài khoản</Text>
+            </View>
           </View>
 
           <Input
@@ -387,35 +419,41 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
             error={errors.phone}
           />
 
-          <Input
-            label="Số Giấy Phép Lái Xe (GPLX) *"
-            placeholder="B2 - 0123456789"
-            value={driverLicense}
-            onChangeText={(v) => {
-              setDriverLicense(v);
-              if (errors.driverLicense) setErrors((p) => ({ ...p, driverLicense: '' }));
-            }}
-            error={errors.driverLicense}
-          />
+          {/* Dòng Số GPLX - Tự động điền theo tài khoản, không cho tự nhập */}
+          <View style={styles.lockedFieldGroup}>
+            <View style={styles.lockedFieldHeaderRow}>
+              <Text style={styles.lockedFieldLabel}>Số Giấy Phép Lái Xe (GPLX)</Text>
+              <Text style={styles.lockedFieldTag}>🔒 Theo tài khoản</Text>
+            </View>
+            <View style={styles.lockedFieldInputBox}>
+              <Text style={styles.lockedFieldValueText}>{accountDriverLicense}</Text>
+            </View>
+            <Text style={styles.lockedFieldHint}>Được tự động liên kết cố định từ hồ sơ tài khoản của bạn</Text>
+          </View>
 
-          <Input
-            label="Số CCCD / CMND"
-            placeholder="001201012345"
-            keyboardType="number-pad"
-            value={cccd}
-            onChangeText={setCccd}
-          />
+          {/* Dòng Số CCCD - Tự động điền theo tài khoản, không cho tự nhập */}
+          <View style={styles.lockedFieldGroup}>
+            <View style={styles.lockedFieldHeaderRow}>
+              <Text style={styles.lockedFieldLabel}>Số CCCD / CMND</Text>
+              <Text style={styles.lockedFieldTag}>🔒 Theo tài khoản</Text>
+            </View>
+            <View style={styles.lockedFieldInputBox}>
+              <Text style={styles.lockedFieldValueText}>{accountCccd}</Text>
+            </View>
+            <Text style={styles.lockedFieldHint}>Được tự động liên kết cố định từ hồ sơ tài khoản của bạn</Text>
+          </View>
 
-          <Input
-            label="Địa chỉ thường trú *"
-            placeholder="Số nhà, đường, quận, Hà Nội"
-            value={address}
-            onChangeText={(v) => {
-              setAddress(v);
-              if (errors.address) setErrors((p) => ({ ...p, address: '' }));
-            }}
-            error={errors.address}
-          />
+          {/* Dòng Địa chỉ thường trú - Tự động điền theo tài khoản, không cho tự nhập */}
+          <View style={styles.lockedFieldGroup}>
+            <View style={styles.lockedFieldHeaderRow}>
+              <Text style={styles.lockedFieldLabel}>Địa Chỉ Thường Trú</Text>
+              <Text style={styles.lockedFieldTag}>🔒 Theo tài khoản</Text>
+            </View>
+            <View style={styles.lockedFieldInputBox}>
+              <Text style={styles.lockedFieldValueText}>{accountAddress}</Text>
+            </View>
+            <Text style={styles.lockedFieldHint}>Được tự động liên kết cố định từ hồ sơ tài khoản của bạn</Text>
+          </View>
         </View>
 
         {/* Document Uploads */}
@@ -427,7 +465,11 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
                 Ảnh chụp mặt trước/sau CCCD, GPLX (Tối đa 6 ảnh)
               </Text>
             </View>
-            <TouchableOpacity onPress={handleSelectImageSource} style={styles.uploadBtn}>
+            <TouchableOpacity
+              onPress={handleSelectImageSource}
+              style={styles.uploadBtn}
+              activeOpacity={0.8}
+            >
               <Text style={styles.uploadBtnText}>+ Thêm ảnh</Text>
             </TouchableOpacity>
           </View>
@@ -448,12 +490,16 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
               ))}
             </ScrollView>
           ) : (
-            <TouchableOpacity style={styles.emptyUploadBox} onPress={handleSelectImageSource}>
+            <TouchableOpacity
+              style={styles.emptyUploadBox}
+              onPress={handleSelectImageSource}
+              activeOpacity={0.8}
+            >
               <Text style={styles.emptyUploadIcon}>📷</Text>
               <Text style={styles.emptyUploadText}>
-                Bấm vào đây để chụp hoặc chọn ảnh CCCD / GPLX
+                Bấm vào đây để chọn ảnh CCCD / GPLX
               </Text>
-              <Text style={styles.emptyUploadSubtext}>Giúp quá trình duyệt hợp đồng diễn ra nhanh hơn</Text>
+              <Text style={styles.emptyUploadSubtext}>Hỗ trợ tải từ thư viện ảnh hoặc chụp trực tiếp</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -498,8 +544,13 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
 
         {/* Submit Button */}
         <Button
-          title="Xác Nhận & Gửi Yêu Cầu Thuê Xe ➔"
+          title={
+            conflictingSchedule
+              ? 'Xe Đã Trùng Lịch Đặt - Vui Lòng Chọn Ngày Khác'
+              : 'Xác Nhận & Gửi Yêu Cầu Thuê Xe ➔'
+          }
           onPress={handleBookingSubmit}
+          disabled={!!conflictingSchedule}
           loading={submitting}
           size="lg"
           style={styles.submitBtn}
@@ -560,6 +611,58 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
               onPress={() => setDateModalVisible(false)}
               style={{ marginTop: SPACING.md }}
             />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Image Source Selection Modal for Mobile */}
+      <Modal
+        visible={imageSourceModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setImageSourceModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.sourceModalCard}>
+            <Text style={styles.sourceModalTitle}>Tải Ảnh Hồ Sơ Giấy Tờ</Text>
+            <Text style={styles.sourceModalSub}>Chọn nguồn tải ảnh CCCD / Giấy phép lái xe</Text>
+
+            <TouchableOpacity
+              style={styles.sourceOptionBtn}
+              activeOpacity={0.8}
+              onPress={() => {
+                setImageSourceModalVisible(false);
+                takePhoto();
+              }}
+            >
+              <Text style={styles.sourceOptionIcon}>📸</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sourceOptionHeading}>Chụp ảnh bằng Camera</Text>
+                <Text style={styles.sourceOptionDesc}>Chụp trực tiếp mặt trước/sau giấy tờ</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.sourceOptionBtn}
+              activeOpacity={0.8}
+              onPress={() => {
+                setImageSourceModalVisible(false);
+                pickImagesFromLibrary();
+              }}
+            >
+              <Text style={styles.sourceOptionIcon}>🖼️</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sourceOptionHeading}>Chọn từ Album Thư Viện</Text>
+                <Text style={styles.sourceOptionDesc}>Chọn ảnh có sẵn trong máy tính / điện thoại</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.sourceCancelBtn}
+              onPress={() => setImageSourceModalVisible(false)}
+            >
+              <Text style={styles.sourceCancelText}>Hủy bỏ</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -628,6 +731,34 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: COLORS.primary,
   },
+  conflictAlertCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+    gap: SPACING.sm,
+  },
+  conflictAlertIcon: {
+    fontSize: 22,
+  },
+  conflictAlertTextWrap: {
+    flex: 1,
+  },
+  conflictAlertHeading: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: COLORS.error,
+    marginBottom: 2,
+  },
+  conflictAlertDesc: {
+    fontSize: 12,
+    color: '#991B1B',
+    lineHeight: 16,
+  },
   sectionCard: {
     backgroundColor: COLORS.white,
     borderRadius: RADIUS.lg,
@@ -641,7 +772,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.sm,
   },
   sectionHeaderTitle: {
     fontSize: 15,
@@ -654,13 +785,53 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   autoFilledBadge: {
-    fontSize: 10,
+    backgroundColor: COLORS.primaryMuted,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: RADIUS.sm,
+  },
+  autoFilledBadgeText: {
+    fontSize: 11,
     fontWeight: '700',
     color: COLORS.primary,
-    backgroundColor: COLORS.primaryMuted,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: RADIUS.sm,
+  },
+  lockedFieldGroup: {
+    marginBottom: SPACING.md,
+  },
+  lockedFieldHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  lockedFieldLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  lockedFieldTag: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  lockedFieldInputBox: {
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 11,
+    justifyContent: 'center',
+  },
+  lockedFieldValueText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  lockedFieldHint: {
+    fontSize: 11,
+    color: COLORS.placeholder,
+    marginTop: 3,
   },
   datePickerRow: {
     flexDirection: 'row',
@@ -887,5 +1058,59 @@ const styles = StyleSheet.create({
   presetDateChipTextActive: {
     color: COLORS.white,
     fontWeight: '700',
+  },
+  sourceModalCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.xl,
+    padding: SPACING.lg,
+    gap: SPACING.sm,
+    ...SHADOWS.elevated,
+  },
+  sourceModalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+    textAlign: 'center',
+  },
+  sourceModalSub: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: SPACING.xs,
+  },
+  sourceOptionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    padding: SPACING.md,
+    backgroundColor: '#F8FAFC',
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  sourceOptionIcon: {
+    fontSize: 24,
+  },
+  sourceOptionHeading: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  sourceOptionDesc: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  sourceCancelBtn: {
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  sourceCancelText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
   },
 });
