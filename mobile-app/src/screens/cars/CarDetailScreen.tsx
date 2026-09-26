@@ -114,7 +114,7 @@ export const CarDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         <View style={styles.imageHeroWrap}>
           <Image source={{ uri: imageUrl }} style={styles.imageHero} resizeMode="cover" />
           <View style={styles.statusBadgeWrap}>
-            <Badge label={car.status} />
+            <Badge label={isInspectionExpired ? 'Đăng kiểm' : (car.publicStatus || car.status)} />
           </View>
           <View style={styles.brandHeroTag}>
             <Text style={styles.brandHeroTagText}>{car.brand} • Đời {car.year}</Text>

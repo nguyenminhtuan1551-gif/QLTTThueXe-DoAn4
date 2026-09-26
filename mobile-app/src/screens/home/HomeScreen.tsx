@@ -93,7 +93,13 @@ export const HomeScreen: React.FC = () => {
         <View style={styles.featuredImageWrap}>
           <Image source={{ uri: imageUrl }} style={styles.featuredImage} resizeMode="cover" />
           <View style={styles.featuredBadge}>
-            <Badge label={item.status} />
+            <Badge
+              label={
+                item.isInspectionExpired || item.publicStatus === 'Đăng kiểm'
+                  ? 'Đăng kiểm'
+                  : (item.publicStatus || item.status)
+              }
+            />
           </View>
           <View style={styles.featuredTag}>
             <Text style={styles.featuredTagText}>⭐ Nổi bật</Text>

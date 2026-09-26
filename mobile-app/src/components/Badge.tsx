@@ -18,9 +18,9 @@ export const Badge: React.FC<BadgeProps> = ({ label, variant, style }) => {
         currentVariant = 'success';
       } else if (['Đang thuê', 'Đang hiệu lực'].includes(label)) {
         currentVariant = 'info';
-      } else if (['Chờ xác nhận', 'Bảo trì', 'Sắp hết hạn', 'Đang bảo trì'].includes(label)) {
+      } else if (['Chờ xác nhận', 'Bảo trì', 'Sắp hết hạn', 'Đang bảo trì', 'Đặt thuê'].includes(label)) {
         currentVariant = 'warning';
-      } else if (['Đã hủy', 'Hết hạn', 'Tạm khóa'].includes(label)) {
+      } else if (['Đã hủy', 'Hết hạn', 'Tạm khóa', 'Đăng kiểm', 'Hết đăng kiểm'].includes(label)) {
         currentVariant = 'danger';
       } else {
         currentVariant = 'default';

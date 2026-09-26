@@ -11,9 +11,9 @@ export const Badge: React.FC<BadgeProps> = ({ label }) => {
     style = 'bg-emerald-50 text-emerald-700 border-emerald-200';
   } else if (['Đang thuê', 'Đang hiệu lực'].includes(label)) {
     style = 'bg-blue-50 text-blue-700 border-blue-200';
-  } else if (['Chờ xác nhận', 'Bảo trì', 'Đang bảo trì', 'Sắp hết hạn'].includes(label)) {
+  } else if (['Chờ xác nhận', 'Bảo trì', 'Đang bảo trì', 'Sắp hết hạn', 'Đặt thuê'].includes(label)) {
     style = 'bg-amber-50 text-amber-700 border-amber-200';
-  } else if (['Đã hủy', 'Tạm khóa', 'Hết hạn'].includes(label)) {
+  } else if (['Đã hủy', 'Tạm khóa', 'Hết hạn', 'Đăng kiểm', 'Hết đăng kiểm'].includes(label)) {
     style = 'bg-rose-50 text-rose-700 border-rose-200';
   }
 

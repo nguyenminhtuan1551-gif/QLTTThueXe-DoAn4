@@ -172,13 +172,21 @@ function enrichCars(cars, scheduleMap, requestedRange = null) {
     const hasBookingConflict = requestedRange
       ? bookingSchedules.some((schedule) => hasScheduleOverlap(schedule, requestedRange))
       : false;
-    const isInspectionExpired = car.inspectionStatus === INSPECTION_STATUS_EXPIRED;
+    const isCurrentlyRented = car.status === CAR_STATUS_RENTING || currentSchedules.length > 0;
+    const isInspectionExpired = isCurrentlyRented
+      ? false
+      : (car.inspectionStatus === INSPECTION_STATUS_EXPIRED ||
+         Boolean(car.inspectionExpiryDate && toDateKey(car.inspectionExpiryDate) < today));
     const location = resolveCarLocation(car);
 
     let publicStatus = car.status;
 
-    if (car.status === CAR_STATUS_AVAILABLE && currentSchedules.length > 0) {
+    if (isCurrentlyRented) {
       publicStatus = CAR_STATUS_RENTING;
+    } else if (car.status === CAR_STATUS_MAINTENANCE) {
+      publicStatus = CAR_STATUS_MAINTENANCE;
+    } else if (isInspectionExpired) {
+      publicStatus = 'Đăng kiểm';
     } else if (car.status === CAR_STATUS_AVAILABLE && upcomingSchedules.length > 0) {
       publicStatus = CAR_STATUS_BOOKED;
     }

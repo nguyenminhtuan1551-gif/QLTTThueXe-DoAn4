@@ -27,6 +27,22 @@ export const CarCard: React.FC<CarCardProps> = ({ car, onPress, style }) => {
     }).format(amount);
   };
 
+  const isCurrentlyRented = car.status === 'Đang thuê' || car.publicStatus === 'Đang thuê';
+  const isInspectionExpired = !isCurrentlyRented && (
+    car.isInspectionExpired ||
+    car.inspectionStatus === 'Hết hạn' ||
+    car.publicStatus === 'Đăng kiểm' ||
+    Boolean(car.inspectionExpiryDate && new Date(car.inspectionExpiryDate) < new Date())
+  );
+
+  const displayStatus = isCurrentlyRented
+    ? 'Đang thuê'
+    : isInspectionExpired
+    ? 'Đăng kiểm'
+    : (car.publicStatus || car.status);
+
+  const canRent = !isInspectionExpired && car.status === 'Sẵn sàng' && car.publicStatus !== 'Đang thuê';
+
   const imageUrl = car.image
     ? car.image.startsWith('http')
       ? car.image
@@ -46,7 +62,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car, onPress, style }) => {
           resizeMode="cover"
         />
         <View style={styles.badgeContainer}>
-          <Badge label={car.status} />
+          <Badge label={displayStatus} />
         </View>
         <View style={styles.brandTag}>
           <Text style={styles.brandText}>{car.brand}</Text>
@@ -87,8 +103,10 @@ export const CarCard: React.FC<CarCardProps> = ({ car, onPress, style }) => {
             <Text style={styles.priceValue}>{formatCurrency(car.price)}</Text>
           </View>
 
-          <View style={styles.actionBtn}>
-            <Text style={styles.actionBtnText}>Đặt xe</Text>
+          <View style={[styles.actionBtn, !canRent && styles.actionBtnMuted]}>
+            <Text style={[styles.actionBtnText, !canRent && styles.actionBtnTextMuted]}>
+              {isInspectionExpired ? 'Đăng kiểm' : canRent ? 'Đặt xe' : 'Chi tiết'}
+            </Text>
           </View>
         </View>
       </View>
@@ -203,9 +221,18 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: RADIUS.md,
   },
+  actionBtnMuted: {
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
   actionBtnText: {
     color: COLORS.white,
     fontSize: 13,
+    fontWeight: '600',
+  },
+  actionBtnTextMuted: {
+    color: '#64748B',
     fontWeight: '600',
   },
 });
