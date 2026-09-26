@@ -5,13 +5,18 @@ const penaltySelect = `
     pp.MaPP AS id,
     pp.MaTraXe AS returnId,
     kh.HoTen AS customerName,
+    xe.TenXe AS carName,
+    xe.BienSo AS carPlate,
+    tx.NgayTraXe AS returnDate,
     pp.LoaiPhiPhat AS type,
     pp.SoTienPhat AS amount,
-    pp.GhiChu AS notes
+    pp.GhiChu AS notes,
+    pp.CreatedAt AS createdAt
   FROM PhiPhat pp
   INNER JOIN TraXe tx ON tx.MaTraXe = pp.MaTraXe
   INNER JOIN HopDongThue hd ON hd.MaHD = tx.MaHD
   INNER JOIN KhachHang kh ON kh.MaKH = hd.MaKH
+  INNER JOIN Xe xe ON xe.MaXe = hd.MaXe
 `;
 
 async function findAll(filters = {}) {

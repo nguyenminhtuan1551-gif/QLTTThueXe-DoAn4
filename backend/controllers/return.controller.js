@@ -8,6 +8,7 @@ const asyncHandler = require('../middlewares/asyncHandler');
 const ReturnModel = require('../models/return.model');
 const ContractModel = require('../models/contract.model');
 const CarModel = require('../models/car.model');
+const PenaltyModel = require('../models/penalty.model');
 
 function createError(message, statusCode = 400) {
   const error = new Error(message);
@@ -80,6 +81,10 @@ const create = asyncHandler(async (req, res) => {
     remaining,
     totalPayment,
     notes,
+    hasPenalty,
+    penaltyType,
+    penaltyAmount,
+    penaltyNotes,
   } = req.body;
 
   if (!contractId || !actualReturnDate || !paymentMethod) {
@@ -100,7 +105,9 @@ const create = asyncHandler(async (req, res) => {
   const resolvedTotalRent = totalRent || resolvedActualDays * Number(contract.pricePerDay);
   const resolvedDeposit = deposit ?? Number(contract.deposit || 0);
   const resolvedRemaining = remaining ?? Math.max(resolvedTotalRent - resolvedDeposit, 0);
-  const resolvedTotalPayment = totalPayment ?? resolvedRemaining;
+
+  const resolvedPenaltyFee = (hasPenalty || Number(penaltyAmount) > 0) ? Number(penaltyAmount || 0) : 0;
+  const resolvedTotalPayment = totalPayment ?? (resolvedRemaining + resolvedPenaltyFee);
 
   const createdReturn = await ReturnModel.create({
     id: id || generateId('TRX'),
@@ -115,6 +122,16 @@ const create = asyncHandler(async (req, res) => {
     totalPayment: resolvedTotalPayment,
     notes,
   });
+
+  if (resolvedPenaltyFee > 0) {
+    await PenaltyModel.create({
+      id: generateId('PP'),
+      returnId: createdReturn.id,
+      type: penaltyType || 'Phạt trả muộn',
+      amount: resolvedPenaltyFee,
+      notes: penaltyNotes || carCondition || '',
+    });
+  }
 
   await ContractModel.update(contractId, {
     customerId: contract.customerId,

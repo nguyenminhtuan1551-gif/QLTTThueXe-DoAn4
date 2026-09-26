@@ -14,6 +14,7 @@ import {
   DollarSign,
   Car as CarIcon,
   CreditCard,
+  AlertTriangle,
   X,
 } from 'lucide-react';
 import { Header } from '../../../components/Header';
@@ -33,6 +34,11 @@ interface ReturnFormData {
   remaining: number;
   totalPayment: number;
   notes?: string;
+  // Penalty integration
+  hasPenalty: boolean;
+  penaltyType: string;
+  penaltyAmount: number;
+  penaltyNotes?: string;
 }
 
 const initialFormData: ReturnFormData = {
@@ -46,6 +52,10 @@ const initialFormData: ReturnFormData = {
   remaining: 0,
   totalPayment: 0,
   notes: '',
+  hasPenalty: false,
+  penaltyType: 'Phạt trả muộn',
+  penaltyAmount: 200000,
+  penaltyNotes: '',
 };
 
 export default function ReturnsPage() {
@@ -112,7 +122,7 @@ export default function ReturnsPage() {
     return `${d}/${m}/${y}`;
   };
 
-  // Re-calculate financial figures when contract or return date changes in form
+  // Re-calculate financial figures when contract, date, or penalty changes
   useEffect(() => {
     if (formData.contractId && formData.actualReturnDate) {
       const targetContract = activeContracts.find((c) => c.id === formData.contractId);
@@ -120,10 +130,14 @@ export default function ReturnsPage() {
         const s = new Date(targetContract.startDate);
         const e = new Date(formData.actualReturnDate);
         const days = Math.max(1, Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)));
-        const daily = Number(targetContract.pricePerDay || 0) || Math.round(Number(targetContract.totalAmount || 0) / Math.max(1, days));
+        const daily =
+          Number(targetContract.pricePerDay || 0) ||
+          Math.round(Number(targetContract.totalAmount || 0) / Math.max(1, days));
         const rent = days * daily;
         const dep = Number(targetContract.deposit) || 0;
         const rem = Math.max(0, rent - dep);
+        const penalty = formData.hasPenalty ? Number(formData.penaltyAmount) || 0 : 0;
+        const total = rem + penalty;
 
         setFormData((prev) => ({
           ...prev,
@@ -131,11 +145,17 @@ export default function ReturnsPage() {
           totalRent: rent,
           deposit: dep,
           remaining: rem,
-          totalPayment: rem,
+          totalPayment: total,
         }));
       }
     }
-  }, [formData.contractId, formData.actualReturnDate, activeContracts]);
+  }, [
+    formData.contractId,
+    formData.actualReturnDate,
+    formData.hasPenalty,
+    formData.penaltyAmount,
+    activeContracts,
+  ]);
 
   const handleOpenCreateModal = () => {
     const firstContract = activeContracts[0];
@@ -157,7 +177,9 @@ export default function ReturnsPage() {
     try {
       await returnService.createReturn(formData);
       showToast(
-        'Lập phiếu trả xe và quyết toán thành công! Xe đã tự động chuyển về trạng thái "Sẵn sàng".'
+        formData.hasPenalty && formData.penaltyAmount > 0
+          ? 'Lập phiếu trả xe và tạo biên bản phí phạt thành công! Đã tự động cộng vào quyết toán.'
+          : 'Lập phiếu trả xe và quyết toán thành công! Xe đã tự động chuyển về trạng thái "Sẵn sàng".'
       );
       setModalOpen(false);
       fetchData();
@@ -190,7 +212,7 @@ export default function ReturnsPage() {
     <div className="flex-1 min-w-0">
       <Header
         title="Quản Lý Trả Xe & Quyết Toán (Car Returns)"
-        description="Lập phiếu bàn giao trả xe, đánh giá tình trạng xe, tính số ngày thực tế, khấu trừ tiền cọc và tất toán hợp đồng"
+        description="Lập phiếu bàn giao trả xe, tích hợp xử lý phí phạt vi phạm, khấu trừ tiền cọc và tự động giải phóng xe"
       />
 
       {/* Toast Notification */}
@@ -320,10 +342,17 @@ export default function ReturnsPage() {
                         <p className="truncate" title={r.carCondition}>
                           {r.carCondition}
                         </p>
+                        {(r.penaltyFee ?? 0) > 0 && (
+                          <span className="text-[11px] text-red-600 font-bold">
+                            ⚠️ Phạt: +{formatCurrency(r.penaltyFee!)}
+                          </span>
+                        )}
                       </td>
                       <td className="px-5 py-4 text-xs">
-                        <p className="font-bold text-emerald-600 text-sm">{formatCurrency(r.totalPayment)}</p>
-                        <p className="text-slate-400 mt-0.5">Tổng thuê: {formatCurrency(r.totalRent)}</p>
+                        <p className="font-bold text-emerald-600 text-sm">
+                          {formatCurrency(r.totalPayment)}
+                        </p>
+                        <p className="text-slate-400 mt-0.5">Thuê: {formatCurrency(r.totalRent)}</p>
                       </td>
                       <td className="px-5 py-4">
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
@@ -348,14 +377,18 @@ export default function ReturnsPage() {
         </div>
       </div>
 
-      {/* Modal Lập Phiếu Trả Xe */}
+      {/* Modal Lập Phiếu Trả Xe & Tích Hợp Lập Phí Phạt */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Lập Phiếu Trả Xe & Quyết Toán</h3>
-                <p className="text-xs text-slate-500">Khấu trừ cọc, quyết toán thanh toán và giải phóng xe về trạng thái "Sẵn sàng"</p>
+                <h3 className="text-base font-bold text-slate-900">
+                  Lập Phiếu Trả Xe, Xử Lý Phạt & Quyết Toán
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Khấu trừ cọc, cộng phí phạt (nếu có), quyết toán và tự động giải phóng xe về "Sẵn sàng"
+                </p>
               </div>
               <button
                 onClick={() => setModalOpen(false)}
@@ -385,7 +418,9 @@ export default function ReturnsPage() {
                   ))}
                 </select>
                 {activeContracts.length === 0 && (
-                  <p className="text-xs text-amber-600 mt-1">Hiện không có hợp đồng nào đang ở trạng thái 'Đang hiệu lực'.</p>
+                  <p className="text-xs text-amber-600 mt-1">
+                    Hiện không có hợp đồng nào đang ở trạng thái 'Đang hiệu lực'.
+                  </p>
                 )}
               </div>
 
@@ -434,6 +469,94 @@ export default function ReturnsPage() {
                 />
               </div>
 
+              {/* Tùy Chọn Phát Sinh Phí Phạt Vi Phạm */}
+              <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                    <span className="text-xs font-bold text-slate-900">
+                      Phát sinh phí phạt vi phạm (nếu có)
+                    </span>
+                  </div>
+                  <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-amber-900">
+                    <input
+                      type="checkbox"
+                      checked={formData.hasPenalty}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setFormData((prev) => ({
+                          ...prev,
+                          hasPenalty: checked,
+                          penaltyAmount: checked ? prev.penaltyAmount || 200000 : 0,
+                        }));
+                      }}
+                      className="w-4 h-4 text-amber-600 rounded border-slate-300 focus:ring-amber-500"
+                    />
+                    <span>Lập biên bản phạt ngay</span>
+                  </label>
+                </div>
+
+                {formData.hasPenalty && (
+                  <div className="space-y-3 pt-2.5 border-t border-amber-200/80">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Loại vi phạm <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={formData.penaltyType}
+                          onChange={(e) =>
+                            setFormData({ ...formData, penaltyType: e.target.value })
+                          }
+                          className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:border-amber-500 bg-white"
+                        >
+                          <option value="Phạt trả muộn">Phạt trả muộn</option>
+                          <option value="Phạt hỏng hóc">Phạt hỏng hóc / trầy xước</option>
+                          <option value="Cả trả muộn và hỏng hóc">Cả trả muộn & hỏng hóc</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Số tiền phạt (VND) <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          min={10000}
+                          step={50000}
+                          value={formData.penaltyAmount}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              penaltyAmount: Number(e.target.value) || 0,
+                            })
+                          }
+                          className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-red-600 focus:outline-none focus:border-amber-500 bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Lý do chi tiết & mô tả vi phạm
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ví dụ: Trả xe trễ 3 tiếng, xước cản trước bên phụ..."
+                        value={formData.penaltyNotes || ''}
+                        onChange={(e) =>
+                          setFormData({ ...formData, penaltyNotes: e.target.value })
+                        }
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-amber-500 bg-white"
+                      />
+                    </div>
+                    <p className="text-[11px] text-amber-700 italic">
+                      💡 Biên bản phạt sẽ được tự động lưu vào mục "Biên bản Phí phạt" và cộng trực tiếp vào quyết toán bên dưới.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               {/* Bảng Quyết Toán Tài Chính Tự Động */}
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
                 <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] mb-2 flex items-center gap-1.5">
@@ -452,19 +575,25 @@ export default function ReturnsPage() {
                   <span>Trừ tiền cọc đã nộp:</span>
                   <span className="font-bold">- {formatCurrency(formData.deposit)}</span>
                 </div>
+                {formData.hasPenalty && formData.penaltyAmount > 0 && (
+                  <div className="flex justify-between text-red-600 font-bold">
+                    <span>Cộng phí phạt vi phạm:</span>
+                    <span>+ {formatCurrency(formData.penaltyAmount)}</span>
+                  </div>
+                )}
                 <div className="pt-2 border-t border-slate-200 flex justify-between text-sm font-bold">
-                  <span className="text-slate-800">Số tiền khách cần thanh toán:</span>
+                  <span className="text-slate-800">Số tiền khách cần thanh toán cuối cùng:</span>
                   <span className="text-emerald-700">{formatCurrency(formData.totalPayment)}</span>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  Ghi Chú Quyết Toán
+                  Ghi Chú Quyết Toán Thêm
                 </label>
                 <input
                   type="text"
-                  placeholder="Ghi chú nhân viên lập phiếu..."
+                  placeholder="Ghi chú thêm của nhân viên lập phiếu..."
                   value={formData.notes || ''}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-blue-500"
@@ -484,7 +613,7 @@ export default function ReturnsPage() {
                   disabled={submitting || !formData.contractId}
                   className="px-5 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm"
                 >
-                  {submitting ? 'Đang Xử Lý...' : 'Hoàn Tất Trả Xe'}
+                  {submitting ? 'Đang Xử Lý...' : 'Hoàn Tất Trả Xe & Quyết Toán'}
                 </button>
               </div>
             </form>
@@ -498,7 +627,9 @@ export default function ReturnsPage() {
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Phiếu Bàn Giao Trả Xe: {selectedReturn.id}</h3>
+                <h3 className="text-base font-bold text-slate-900">
+                  Phiếu Bàn Giao Trả Xe: {selectedReturn.id}
+                </h3>
                 <p className="text-xs text-slate-500">Mã hợp đồng: {selectedReturn.contractId}</p>
               </div>
               <button
@@ -513,42 +644,64 @@ export default function ReturnsPage() {
               <div className="grid grid-cols-2 gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
                 <div>
                   <p className="text-slate-400">Khách Hàng:</p>
-                  <p className="font-bold text-slate-900 text-sm mt-0.5">{selectedReturn.customerName}</p>
+                  <p className="font-bold text-slate-900 text-sm mt-0.5">
+                    {selectedReturn.customerName}
+                  </p>
                 </div>
                 <div>
                   <p className="text-slate-400">Xe Bàn Giao:</p>
-                  <p className="font-bold text-slate-900 text-sm mt-0.5">{selectedReturn.carName} ({selectedReturn.carPlate})</p>
+                  <p className="font-bold text-slate-900 text-sm mt-0.5">
+                    {selectedReturn.carName} ({selectedReturn.carPlate})
+                  </p>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-500">Ngày trả thực tế:</span>
-                  <span className="font-bold text-slate-800">{formatDate(selectedReturn.actualReturnDate)}</span>
+                  <span className="font-bold text-slate-800">
+                    {formatDate(selectedReturn.actualReturnDate)}
+                  </span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-500">Số ngày thuê thực tế:</span>
-                  <span className="font-bold text-slate-800">{selectedReturn.actualDays} ngày</span>
+                  <span className="font-bold text-slate-800">
+                    {selectedReturn.actualDays} ngày
+                  </span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-500">Tình trạng xe:</span>
-                  <span className="font-medium text-slate-800 max-w-[65%] text-right">{selectedReturn.carCondition}</span>
+                  <span className="font-medium text-slate-800 max-w-[65%] text-right">
+                    {selectedReturn.carCondition}
+                  </span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-500">Tổng tiền thuê:</span>
-                  <span className="font-bold text-slate-900">{formatCurrency(selectedReturn.totalRent)}</span>
+                  <span className="font-bold text-slate-900">
+                    {formatCurrency(selectedReturn.totalRent)}
+                  </span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-100 text-amber-700">
                   <span>Tiền cọc đã nộp:</span>
                   <span className="font-bold">{formatCurrency(selectedReturn.deposit)}</span>
                 </div>
+                {(selectedReturn.penaltyFee ?? 0) > 0 && (
+                  <div className="flex justify-between py-1 border-b border-slate-100 text-red-600 font-bold">
+                    <span>Phí phạt vi phạm phát sinh:</span>
+                    <span>+{formatCurrency(selectedReturn.penaltyFee!)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-500">Hình thức thanh toán:</span>
-                  <span className="font-bold text-slate-800">{selectedReturn.paymentMethod}</span>
+                  <span className="font-bold text-slate-800">
+                    {selectedReturn.paymentMethod}
+                  </span>
                 </div>
                 <div className="flex justify-between py-2 text-sm font-bold">
                   <span className="text-slate-900">Tổng tiền thanh toán cuối cùng:</span>
-                  <span className="text-emerald-700">{formatCurrency(selectedReturn.totalPayment)}</span>
+                  <span className="text-emerald-700">
+                    {formatCurrency(selectedReturn.totalPayment)}
+                  </span>
                 </div>
               </div>
 
