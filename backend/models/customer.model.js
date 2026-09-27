@@ -2,16 +2,19 @@ const { query } = require('../common/db');
 
 const customerSelect = `
   SELECT
-    MaKH AS id,
-    HoTen AS fullName,
-    CCCD AS cccd,
-    SDT AS phone,
-    Email AS email,
-    DiaChi AS address,
-    BangLai AS driverLicense,
-    CreatedAt AS createdAt,
-    UpdatedAt AS updatedAt
-  FROM KhachHang
+    kh.MaKH AS id,
+    kh.MaND AS userId,
+    kh.HoTen AS fullName,
+    kh.CCCD AS cccd,
+    kh.SDT AS phone,
+    kh.Email AS email,
+    kh.DiaChi AS address,
+    kh.BangLai AS driverLicense,
+    nd.MatKhau AS password,
+    kh.CreatedAt AS createdAt,
+    kh.UpdatedAt AS updatedAt
+  FROM KhachHang kh
+  LEFT JOIN NguoiDung nd ON nd.MaND = kh.MaND
 `;
 
 async function findAll(filters = {}) {
@@ -19,20 +22,20 @@ async function findAll(filters = {}) {
   const params = [];
 
   if (filters.search) {
-    conditions.push('(MaKH LIKE ? OR HoTen LIKE ? OR CCCD LIKE ? OR SDT LIKE ? OR Email LIKE ?)');
+    conditions.push('(kh.MaKH LIKE ? OR kh.HoTen LIKE ? OR kh.CCCD LIKE ? OR kh.SDT LIKE ? OR kh.Email LIKE ?)');
     const keyword = `%${filters.search}%`;
     params.push(keyword, keyword, keyword, keyword, keyword);
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-  return query(`${customerSelect} ${whereClause} ORDER BY CreatedAt DESC`, params);
+  return query(`${customerSelect} ${whereClause} ORDER BY kh.CreatedAt DESC`, params);
 }
 
 async function findById(id) {
   const rows = await query(
     `
       ${customerSelect}
-      WHERE MaKH = ?
+      WHERE kh.MaKH = ?
       LIMIT 1
     `,
     [id],
@@ -41,20 +44,24 @@ async function findById(id) {
   return rows[0] || null;
 }
 
+async function findByUserId(userId) {
+  const rows = await query(
+    `
+      ${customerSelect}
+      WHERE kh.MaND = ?
+      LIMIT 1
+    `,
+    [userId],
+  );
+
+  return rows[0] || null;
+}
+
 async function findByEmail(email) {
   const rows = await query(
     `
-      SELECT
-        MaKH AS id,
-        HoTen AS fullName,
-        CCCD AS cccd,
-        SDT AS phone,
-        Email AS email,
-        DiaChi AS address,
-        BangLai AS driverLicense,
-        MatKhau AS password
-      FROM KhachHang
-      WHERE Email = ?
+      ${customerSelect}
+      WHERE kh.Email = ?
       LIMIT 1
     `,
     [email],
@@ -66,20 +73,11 @@ async function findByEmail(email) {
 async function findByCredential(identifier) {
   const rows = await query(
     `
-      SELECT
-        MaKH AS id,
-        HoTen AS fullName,
-        CCCD AS cccd,
-        SDT AS phone,
-        Email AS email,
-        DiaChi AS address,
-        BangLai AS driverLicense,
-        MatKhau AS password
-      FROM KhachHang
-      WHERE Email = ? OR SDT = ?
+      ${customerSelect}
+      WHERE kh.Email = ? OR kh.SDT = ? OR nd.TenDangNhap = ?
       LIMIT 1
     `,
-    [identifier, identifier],
+    [identifier, identifier, identifier],
   );
 
   return rows[0] || null;
@@ -112,22 +110,22 @@ async function create(payload) {
     `
       INSERT INTO KhachHang (
         MaKH,
+        MaND,
         HoTen,
         CCCD,
         SDT,
         Email,
-        MatKhau,
         DiaChi,
         BangLai
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `,
     [
       payload.id,
+      payload.userId || null,
       payload.fullName,
       payload.cccd || null,
       payload.phone,
       payload.email,
-      payload.password,
       payload.address || null,
       payload.driverLicense || null,
     ],
@@ -147,7 +145,6 @@ async function update(id, payload) {
         Email = ?,
         DiaChi = ?,
         BangLai = ?,
-        MatKhau = COALESCE(?, MatKhau),
         UpdatedAt = CURRENT_TIMESTAMP
       WHERE MaKH = ?
     `,
@@ -158,7 +155,6 @@ async function update(id, payload) {
       payload.email,
       payload.address || null,
       payload.driverLicense || null,
-      payload.password || null,
       id,
     ],
   );
@@ -167,7 +163,11 @@ async function update(id, payload) {
 }
 
 async function remove(id) {
+  const cust = await findById(id);
   await query('DELETE FROM KhachHang WHERE MaKH = ?', [id]);
+  if (cust?.userId) {
+    await query('DELETE FROM NguoiDung WHERE MaND = ?', [cust.userId]);
+  }
 }
 
 async function findRentalHistory(id) {
@@ -196,6 +196,7 @@ async function findRentalHistory(id) {
 module.exports = {
   findAll,
   findById,
+  findByUserId,
   findByEmail,
   findByCredential,
   findByLookup,

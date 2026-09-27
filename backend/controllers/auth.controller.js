@@ -4,6 +4,7 @@ const { hashPassword, comparePassword } = require('../common/password');
 const { generateId } = require('../common/generateId');
 const { signToken } = require('../common/jwt');
 const asyncHandler = require('../middlewares/asyncHandler');
+const UserModel = require('../models/user.model');
 const EmployeeModel = require('../models/employee.model');
 const CustomerModel = require('../models/customer.model');
 
@@ -39,12 +40,10 @@ const adminLogin = asyncHandler(async (req, res) => {
     if (customer) {
       throw createError(CUSTOMER_ACCOUNT_MESSAGE, 403);
     }
-
     throw createError('Thông tin đăng nhập không chính xác.', 401);
   }
 
   const matched = await comparePassword(password, employee.password);
-
   if (!matched) {
     throw createError('Thông tin đăng nhập không chính xác.', 401);
   }
@@ -55,6 +54,7 @@ const adminLogin = asyncHandler(async (req, res) => {
 
   const user = {
     id: employee.id,
+    userId: employee.userId,
     fullName: employee.fullName,
     email: employee.email,
     phone: employee.phone,
@@ -96,19 +96,38 @@ const customerRegister = asyncHandler(async (req, res) => {
     throw createError('Email này đã được đăng ký.', 409);
   }
 
+  const existingUser = await UserModel.findByUsername(email);
+  if (existingUser) {
+    throw createError('Tài khoản người dùng này đã tồn tại.', 409);
+  }
+
+  // 1. Tạo bản ghi NguoiDung (lưu tài khoản & mật khẩu)
+  const userId = generateId('ND');
+  await UserModel.create({
+    id: userId,
+    username: email,
+    password: await hashPassword(password),
+    role: 'Customer',
+    scope: 'customer',
+    status: 'Đang hoạt động',
+  });
+
+  // 2. Tạo bản ghi KhachHang (lưu hồ sơ thông tin, liên kết MaND)
+  const customerId = id || generateId('KH');
   const createdCustomer = await CustomerModel.create({
-    id: id || generateId('KH'),
+    id: customerId,
+    userId,
     fullName,
     cccd,
     phone,
     email,
-    password: await hashPassword(password),
     address,
     driverLicense,
   });
 
   const user = {
     id: createdCustomer.id,
+    userId,
     fullName: createdCustomer.fullName,
     email: createdCustomer.email,
     phone: createdCustomer.phone,
@@ -140,14 +159,13 @@ const customerLogin = asyncHandler(async (req, res) => {
     throw createError('Vui lòng nhập email và mật khẩu.', 400);
   }
 
-  const customer = await CustomerModel.findByEmail(email);
+  const customer = await CustomerModel.findByCredential(email);
 
   if (!customer) {
     const employee = await EmployeeModel.findByCredential(email);
     if (employee) {
       throw createError(INTERNAL_ACCOUNT_MESSAGE, 403);
     }
-
     throw createError('Email hoặc mật khẩu không đúng.', 401);
   }
 
@@ -158,6 +176,7 @@ const customerLogin = asyncHandler(async (req, res) => {
 
   const user = {
     id: customer.id,
+    userId: customer.userId,
     fullName: customer.fullName,
     email: customer.email,
     phone: customer.phone,
@@ -198,6 +217,18 @@ const me = asyncHandler(async (req, res) => {
         cccd: customer.cccd || '',
         driverLicense: customer.driverLicense || '',
         address: customer.address || '',
+      };
+    }
+  } else if (req.currentUser.scope === 'admin') {
+    const employee = await EmployeeModel.findById(req.currentUser.id);
+    if (employee) {
+      profile = {
+        ...req.currentUser,
+        fullName: employee.fullName,
+        email: employee.email,
+        phone: employee.phone,
+        role: employee.role,
+        status: employee.status,
       };
     }
   }
@@ -256,14 +287,10 @@ const changeAdminPassword = asyncHandler(async (req, res) => {
     throw createError('Mật khẩu hiện tại không chính xác.', 400);
   }
 
-  await EmployeeModel.update(employee.id, {
-    fullName: employee.fullName,
-    phone: employee.phone,
-    email: employee.email,
-    role: employee.role,
-    status: employee.status || EMPLOYEE_STATUS_ACTIVE,
-    password: await hashPassword(newPassword),
-  });
+  const hashed = await hashPassword(newPassword);
+  if (employee.userId) {
+    await UserModel.updatePassword(employee.userId, hashed);
+  }
 
   sendSuccess(res, {
     data: null,

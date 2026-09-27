@@ -16,6 +16,7 @@ const { verifyPickupPointInHanoi } = require('../common/pickupPointValidator');
 const asyncHandler = require('../middlewares/asyncHandler');
 const ContractModel = require('../models/contract.model');
 const CustomerModel = require('../models/customer.model');
+const UserModel = require('../models/user.model');
 const CarModel = require('../models/car.model');
 const ReturnModel = require('../models/return.model');
 const PenaltyModel = require('../models/penalty.model');
@@ -190,21 +191,30 @@ async function ensureCustomer(payload) {
       email: payload.email || existingCustomer.email,
       address: payload.address || existingCustomer.address,
       driverLicense: payload.driverLicense || existingCustomer.driverLicense,
-      password: null,
     });
     return existingCustomer.id;
   }
 
+  const userId = generateId('ND');
+  await UserModel.create({
+    id: userId,
+    username: payload.email,
+    password: await hashPassword(payload.password || '123456'),
+    role: 'Customer',
+    scope: 'customer',
+    status: 'Đang hoạt động',
+  });
+
   const customerId = generateId('KH');
   await CustomerModel.create({
     id: customerId,
+    userId,
     fullName: payload.fullName,
     cccd: payload.cccd,
     phone: payload.phone,
     email: payload.email,
     address: payload.address,
     driverLicense: payload.driverLicense,
-    password: await hashPassword(payload.password || '123456'),
   });
 
   return customerId;
@@ -229,7 +239,6 @@ async function resolveCustomerId(req, payload) {
       email: payload.email || existingCustomer.email,
       address: payload.address || existingCustomer.address,
       driverLicense: payload.driverLicense || existingCustomer.driverLicense,
-      password: null,
     };
 
     if (

@@ -3,6 +3,7 @@ const { hashPassword } = require('../common/password');
 const { generateId } = require('../common/generateId');
 const asyncHandler = require('../middlewares/asyncHandler');
 const EmployeeModel = require('../models/employee.model');
+const UserModel = require('../models/user.model');
 
 function createError(message, statusCode = 400) {
   const error = new Error(message);
@@ -40,14 +41,31 @@ const create = asyncHandler(async (req, res) => {
     throw createError('Thiếu thông tin nhân viên.', 400);
   }
 
+  const existing = await EmployeeModel.findByCredential(email);
+  if (existing) {
+    throw createError('Email này đã được sử dụng.', 409);
+  }
+
+  // 1. Tạo bản ghi NguoiDung
+  const userId = generateId('ND');
+  await UserModel.create({
+    id: userId,
+    username: email,
+    password: await hashPassword(password),
+    role: role || 'Nhân viên',
+    scope: 'admin',
+    status: status || 'Đang hoạt động',
+  });
+
+  // 2. Tạo bản ghi NhanVien liên kết MaND
   const createdEmployee = await EmployeeModel.create({
     id: id || generateId('NV'),
+    userId,
     fullName,
     phone,
     email,
     role,
-    status,
-    password: await hashPassword(password),
+    status: status || 'Đang hoạt động',
   });
 
   sendSuccess(res, {
@@ -64,13 +82,22 @@ const update = asyncHandler(async (req, res) => {
     throw createError('Không tìm thấy nhân viên cần cập nhật.', 404);
   }
 
+  if (existingEmployee.userId) {
+    if (req.body.password) {
+      const hashed = await hashPassword(req.body.password);
+      await UserModel.updatePassword(existingEmployee.userId, hashed);
+    }
+    if (req.body.status) {
+      await UserModel.updateStatus(existingEmployee.userId, req.body.status);
+    }
+  }
+
   const updatedEmployee = await EmployeeModel.update(req.params.id, {
     fullName: req.body.fullName ?? existingEmployee.fullName,
     phone: req.body.phone ?? existingEmployee.phone,
     email: req.body.email ?? existingEmployee.email,
     role: req.body.role ?? existingEmployee.role,
     status: req.body.status ?? existingEmployee.status,
-    password: req.body.password ? await hashPassword(req.body.password) : null,
   });
 
   sendSuccess(res, {

@@ -1,5 +1,4 @@
 
-
 DROP TABLE IF EXISTS CaiDatHeThong;
 DROP TABLE IF EXISTS LienHe;
 DROP TABLE IF EXISTS PhiPhat;
@@ -11,19 +10,47 @@ DROP TABLE IF EXISTS DangKiem;
 DROP TABLE IF EXISTS KhachHang;
 DROP TABLE IF EXISTS Xe;
 DROP TABLE IF EXISTS NhanVien;
+DROP TABLE IF EXISTS NguoiDung;
 
+-- ========================================================
+-- BẢNG TẬP TRUNG TÀI KHOẢN & MẬT KHẨU (NGUOIDUNG / USERS)
+-- ========================================================
+CREATE TABLE NguoiDung (
+  MaND VARCHAR(20) PRIMARY KEY,
+  TenDangNhap VARCHAR(100) NOT NULL UNIQUE, -- Email hoặc Username đăng nhập
+  MatKhau VARCHAR(255) NOT NULL,            -- Hash bcrypt mật khẩu
+  VaiTro VARCHAR(30) NOT NULL,              -- 'Admin', 'Nhân viên', 'Customer'
+  PhanVung VARCHAR(30) NOT NULL,            -- 'admin' (quản trị), 'customer' (khách hàng)
+  TrangThai VARCHAR(30) NOT NULL DEFAULT 'Đang hoạt động', -- 'Đang hoạt động', 'Tạm khóa'
+  CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT chk_nguoidung_vaitro
+    CHECK (VaiTro IN ('Admin', 'Nhân viên', 'Customer')),
+  CONSTRAINT chk_nguoidung_phanvung
+    CHECK (PhanVung IN ('admin', 'customer')),
+  CONSTRAINT chk_nguoidung_trangthai
+    CHECK (TrangThai IN ('Đang hoạt động', 'Tạm khóa'))
+);
+
+-- ========================================================
+-- BẢNG THÔNG TIN HỒ SƠ NHÂN VIÊN (NHANVIEN)
+-- Khóa ngoại MaND liên kết sang NguoiDung
+-- ========================================================
 CREATE TABLE NhanVien (
   MaNV VARCHAR(20) PRIMARY KEY,
+  MaND VARCHAR(20) NOT NULL UNIQUE,
   HoTen VARCHAR(100) NOT NULL,
   SDT VARCHAR(20) NOT NULL,
   Email VARCHAR(100) NOT NULL UNIQUE,
   ChucVu VARCHAR(30) NOT NULL,
-  MatKhau VARCHAR(255) NOT NULL,
   TrangThai VARCHAR(30) NOT NULL DEFAULT 'Đang hoạt động',
   CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT chk_nhanvien_chucvu
-    CHECK (ChucVu IN ('Admin', 'Nhân viên'))
+    CHECK (ChucVu IN ('Admin', 'Nhân viên')),
+  CONSTRAINT fk_nhanvien_nguoidung
+    FOREIGN KEY (MaND) REFERENCES NguoiDung(MaND)
+    ON DELETE CASCADE
 );
 
 CREATE TABLE Xe (
@@ -61,17 +88,24 @@ CREATE TABLE DangKiem (
     ON DELETE CASCADE
 );
 
+-- ========================================================
+-- BẢNG THÔNG TIN HỒ SƠ KHÁCH HÀNG (KHACHHANG)
+-- Khóa ngoại MaND liên kết sang NguoiDung (không lưu mật khẩu tại đây)
+-- ========================================================
 CREATE TABLE KhachHang (
   MaKH VARCHAR(20) PRIMARY KEY,
+  MaND VARCHAR(20) UNIQUE,
   HoTen VARCHAR(100) NOT NULL,
-  CCCD VARCHAR(20) UNIQUE,
+  CCCD VARCHAR(20),
   SDT VARCHAR(20) NOT NULL,
   Email VARCHAR(100) NOT NULL UNIQUE,
-  MatKhau VARCHAR(255) NOT NULL,
   DiaChi VARCHAR(255),
   BangLai VARCHAR(50),
   CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_khachhang_nguoidung
+    FOREIGN KEY (MaND) REFERENCES NguoiDung(MaND)
+    ON DELETE SET NULL
 );
 
 CREATE TABLE HopDongThue (

@@ -3,6 +3,7 @@ const { hashPassword } = require('../common/password');
 const { generateId } = require('../common/generateId');
 const asyncHandler = require('../middlewares/asyncHandler');
 const CustomerModel = require('../models/customer.model');
+const UserModel = require('../models/user.model');
 
 function createError(message, statusCode = 400) {
   const error = new Error(message);
@@ -49,15 +50,30 @@ const create = asyncHandler(async (req, res) => {
     throw createError('Vui lòng nhập đầy đủ thông tin khách hàng.', 400);
   }
 
+  const existing = await CustomerModel.findByEmail(email);
+  if (existing) {
+    throw createError('Email này đã được sử dụng.', 409);
+  }
+
+  const userId = generateId('ND');
+  await UserModel.create({
+    id: userId,
+    username: email,
+    password: await hashPassword(password || '123456'),
+    role: 'Customer',
+    scope: 'customer',
+    status: 'Đang hoạt động',
+  });
+
   const createdCustomer = await CustomerModel.create({
     id: id || generateId('KH'),
+    userId,
     fullName,
     cccd,
     phone,
     email,
     address,
     driverLicense,
-    password: await hashPassword(password || '123456'),
   });
 
   sendSuccess(res, {
@@ -74,6 +90,11 @@ const update = asyncHandler(async (req, res) => {
     throw createError('Không tìm thấy khách hàng cần cập nhật.', 404);
   }
 
+  if (req.body.password && existingCustomer.userId) {
+    const hashed = await hashPassword(req.body.password);
+    await UserModel.updatePassword(existingCustomer.userId, hashed);
+  }
+
   const updatedCustomer = await CustomerModel.update(req.params.id, {
     fullName: req.body.fullName ?? existingCustomer.fullName,
     cccd: req.body.cccd ?? existingCustomer.cccd,
@@ -81,7 +102,6 @@ const update = asyncHandler(async (req, res) => {
     email: req.body.email ?? existingCustomer.email,
     address: req.body.address ?? existingCustomer.address,
     driverLicense: req.body.driverLicense ?? existingCustomer.driverLicense,
-    password: req.body.password ? await hashPassword(req.body.password) : null,
   });
 
   sendSuccess(res, {
