@@ -341,6 +341,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
   },
   content: {
     flex: 1,
@@ -662,6 +665,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
     backgroundColor: COLORS.white,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,

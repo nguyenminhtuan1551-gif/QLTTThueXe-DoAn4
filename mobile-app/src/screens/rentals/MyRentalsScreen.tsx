@@ -260,6 +260,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
   },
   searchBarWrap: {
     backgroundColor: COLORS.white,

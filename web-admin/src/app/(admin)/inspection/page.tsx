@@ -224,7 +224,7 @@ export default function InspectionPage() {
         </div>
       )}
 
-      <div className="p-8 space-y-6">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         {/* KPI Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">

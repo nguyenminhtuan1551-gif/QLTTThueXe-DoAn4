@@ -104,7 +104,7 @@ export default function CustomersPage() {
         description="Quản lý hồ sơ thông tin khách hàng, số CCCD/GPLX, danh bạ liên lạc và lịch sử toàn bộ các chuyến thuê xe"
       />
 
-      <div className="p-8 space-y-6">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         {/* Search Bar */}
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between gap-4">
           <div className="relative flex-1 max-w-md">

@@ -161,7 +161,7 @@ export default function ReportsPage() {
         </div>
       )}
 
-      <div className="p-8 space-y-6">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         {/* Date Filter & Export Bar */}
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4 print:hidden">
           <div className="flex flex-wrap items-center gap-3">

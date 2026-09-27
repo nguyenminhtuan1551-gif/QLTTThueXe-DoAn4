@@ -28,6 +28,9 @@ export const MainTabNavigator: React.FC = () => {
           height: Platform.OS === 'ios' ? 84 : 64,
           paddingBottom: Platform.OS === 'ios' ? 24 : 6,
           paddingTop: 6,
+          maxWidth: 600,
+          width: '100%',
+          alignSelf: 'center',
           ...SHADOWS.card,
         },
         tabBarItemStyle: {

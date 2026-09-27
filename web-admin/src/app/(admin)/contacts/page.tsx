@@ -118,7 +118,7 @@ export default function ContactsPage() {
         </div>
       )}
 
-      <div className="p-8 space-y-6">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         {/* KPI Summary Banner */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">

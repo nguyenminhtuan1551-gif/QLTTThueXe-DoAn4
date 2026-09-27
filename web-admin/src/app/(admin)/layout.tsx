@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
+import { SidebarProvider } from '../../context/SidebarContext';
 import { Sidebar } from '../../components/Sidebar';
 
 export default function AdminLayout({
@@ -35,11 +36,13 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen flex bg-slate-50">
-      <Sidebar />
-      <main className="flex-1 min-w-0 flex flex-col">
-        {children}
-      </main>
-    </div>
+    <SidebarProvider>
+      <div className="min-h-screen flex bg-slate-50 relative overflow-x-hidden">
+        <Sidebar />
+        <main className="flex-1 min-w-0 flex flex-col w-full">
+          {children}
+        </main>
+      </div>
+    </SidebarProvider>
   );
 }

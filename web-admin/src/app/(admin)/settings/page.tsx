@@ -110,7 +110,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <div className="p-8 max-w-4xl space-y-6">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl space-y-6">
         {loading ? (
           <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-400">
             <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
