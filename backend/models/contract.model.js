@@ -217,7 +217,7 @@ async function create(payload) {
 
   try {
     await connection.beginTransaction();
-    await connection.execute(
+    await connection.query(
       `
         INSERT INTO HopDongThue (
           MaHD,
@@ -254,7 +254,7 @@ async function create(payload) {
         params.push(generateId('IMG'), payload.id, image.path, image.fileName || null);
       });
 
-      await connection.execute(
+      await connection.query(
         `
           INSERT INTO AnhDatXe (
             MaAnh,

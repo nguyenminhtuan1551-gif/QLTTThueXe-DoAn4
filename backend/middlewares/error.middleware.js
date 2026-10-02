@@ -5,6 +5,8 @@ function notFoundHandler(req, _res, next) {
 }
 
 function errorHandler(error, _req, res, _next) {
+  console.error('API Error:', error);
+
   if (error.code === 'ER_DUP_ENTRY') {
     return res.status(409).json({
       success: false,

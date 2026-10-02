@@ -30,10 +30,12 @@ const carSelect = `
   FROM Xe xe
   LEFT JOIN DangKiem dk
     ON dk.MaXe = xe.MaXe
-    AND dk.NgayDK = (
-      SELECT MAX(dk2.NgayDK)
+    AND dk.MaDK = (
+      SELECT dk2.MaDK
       FROM DangKiem dk2
       WHERE dk2.MaXe = xe.MaXe
+      ORDER BY dk2.NgayDK DESC, dk2.MaDK DESC
+      LIMIT 1
     )
 `;
 
@@ -318,10 +320,12 @@ async function findFeatured(limit = 6) {
       FROM Xe xe
       LEFT JOIN DangKiem dk
         ON dk.MaXe = xe.MaXe
-        AND dk.NgayDK = (
-          SELECT MAX(dk2.NgayDK)
+        AND dk.MaDK = (
+          SELECT dk2.MaDK
           FROM DangKiem dk2
           WHERE dk2.MaXe = xe.MaXe
+          ORDER BY dk2.NgayDK DESC, dk2.MaDK DESC
+          LIMIT 1
         )
       LEFT JOIN (
         SELECT
