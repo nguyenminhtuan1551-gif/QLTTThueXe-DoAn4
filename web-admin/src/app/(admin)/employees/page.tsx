@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Header } from '../../../components/Header';
 import { Badge } from '../../../components/Badge';
+import { Pagination } from '../../../components/Pagination';
 import { employeeService } from '../../../services/employeeService';
 import { Employee } from '../../../types';
 import { useAuth } from '../../../context/AuthContext';
@@ -47,6 +48,8 @@ export default function EmployeesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('Tất cả');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -79,6 +82,10 @@ export default function EmployeesPage() {
   useEffect(() => {
     fetchEmployees();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, roleFilter]);
 
   const handleOpenCreateModal = () => {
     setEditingEmployee(null);
@@ -187,6 +194,11 @@ export default function EmployeesPage() {
     return true;
   });
 
+  const paginatedEmployees = filtered.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   return (
     <div className="flex-1 min-w-0">
       <Header
@@ -263,12 +275,12 @@ export default function EmployeesPage() {
             <table className="w-full text-left text-sm text-slate-600">
               <thead className="bg-slate-50 text-slate-500 font-semibold text-xs uppercase border-b border-slate-200">
                 <tr>
-                  <th className="px-5 py-3.5">Mã NV</th>
-                  <th className="px-5 py-3.5">Họ & Tên</th>
-                  <th className="px-5 py-3.5">Liên Lạc</th>
-                  <th className="px-5 py-3.5">Vai Trò</th>
-                  <th className="px-5 py-3.5">Trạng Thái</th>
-                  <th className="px-5 py-3.5 text-right">Thao Tác</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Mã NV</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Họ & Tên</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Liên Lạc</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Vai Trò</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Trạng Thái</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap text-right">Thao Tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
@@ -288,19 +300,19 @@ export default function EmployeesPage() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((e) => (
+                  paginatedEmployees.map((e) => (
                     <tr key={e.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-5 py-4 font-bold text-slate-900 text-xs font-mono">
+                      <td className="px-5 py-4 font-bold text-slate-900 text-xs font-mono whitespace-nowrap">
                         {e.id}
                       </td>
-                      <td className="px-5 py-4 font-bold text-slate-900">
+                      <td className="px-5 py-4 font-bold text-slate-900 whitespace-nowrap">
                         {e.fullName}
                       </td>
-                      <td className="px-5 py-4 text-xs">
+                      <td className="px-5 py-4 text-xs whitespace-nowrap">
                         <p className="font-semibold text-slate-800">{e.phone}</p>
                         <p className="text-slate-400 mt-0.5">{e.email}</p>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 whitespace-nowrap">
                         <span
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
                             e.role === 'Admin'
@@ -312,10 +324,10 @@ export default function EmployeesPage() {
                           {e.role}
                         </span>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 whitespace-nowrap">
                         <Badge label={e.status || 'Đang hoạt động'} />
                       </td>
-                      <td className="px-5 py-4 text-right">
+                      <td className="px-5 py-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleToggleLock(e)}
@@ -352,6 +364,17 @@ export default function EmployeesPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {!loading && filtered.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filtered.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
+          )}
         </div>
       </div>
 

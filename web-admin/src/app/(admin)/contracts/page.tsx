@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Header } from '../../../components/Header';
 import { Badge } from '../../../components/Badge';
+import { Pagination } from '../../../components/Pagination';
 import { contractService } from '../../../services/contractService';
 import { carService } from '../../../services/carService';
 import { Contract, Car } from '../../../types';
@@ -69,6 +70,8 @@ export default function ContractsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Tất cả');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Detail Modal State
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -112,6 +115,10 @@ export default function ContractsPage() {
   useEffect(() => {
     fetchContracts();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter]);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -233,6 +240,11 @@ export default function ContractsPage() {
     return true;
   });
 
+  const paginatedContracts = filteredContracts.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   return (
     <div className="flex-1 min-w-0">
       <Header
@@ -314,14 +326,14 @@ export default function ContractsPage() {
             <table className="w-full text-left text-sm text-slate-600">
               <thead className="bg-slate-50 text-slate-500 font-semibold text-xs uppercase border-b border-slate-200">
                 <tr>
-                  <th className="px-5 py-3.5">Mã HĐ</th>
-                  <th className="px-5 py-3.5">Khách Hàng</th>
-                  <th className="px-5 py-3.5">Phương Tiện</th>
-                  <th className="px-5 py-3.5">Thời Gian Thuê</th>
-                  <th className="px-5 py-3.5">Điểm Nhận Xe</th>
-                  <th className="px-5 py-3.5">Chi Phí</th>
-                  <th className="px-5 py-3.5">Trạng Thái</th>
-                  <th className="px-5 py-3.5 text-right">Thao Tác</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Mã HĐ</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Khách Hàng</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Phương Tiện</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Thời Gian Thuê</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Điểm Nhận Xe</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Chi Phí</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Trạng Thái</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap text-right">Thao Tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
@@ -341,35 +353,35 @@ export default function ContractsPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredContracts.map((c) => (
+                  paginatedContracts.map((c) => (
                     <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-5 py-4 font-bold text-blue-600 text-xs font-mono">
+                      <td className="px-5 py-4 font-bold text-blue-600 text-xs font-mono whitespace-nowrap">
                         {c.id}
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 whitespace-nowrap">
                         <p className="font-bold text-slate-900 leading-snug">{c.customerName || c.customerId}</p>
                         <p className="text-xs text-slate-400 mt-0.5">{c.customerPhone}</p>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 whitespace-nowrap">
                         <p className="font-semibold text-slate-800">{c.carName || c.carId}</p>
-                        <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-300 text-[11px] font-mono font-bold tracking-wider inline-block mt-0.5">
+                        <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-300 text-[11px] font-mono font-bold tracking-wider inline-block mt-0.5 whitespace-nowrap">
                           {c.carLicensePlate || c.carPlate || '---'}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-xs font-medium text-slate-700">
+                      <td className="px-5 py-4 text-xs font-medium text-slate-700 whitespace-nowrap">
                         <p>{formatDate(c.startDate)} ➔ {formatDate(c.expectedReturnDate)}</p>
                       </td>
-                      <td className="px-5 py-4 text-xs text-slate-600 max-w-[200px]">
-                        <p className="truncate" title={c.pickupPoint}>📍 {c.pickupPoint}</p>
+                      <td className="px-5 py-4 text-xs text-slate-600 min-w-[200px] max-w-[280px]">
+                        <p className="line-clamp-2" title={c.pickupPoint}>📍 {c.pickupPoint}</p>
                       </td>
-                      <td className="px-5 py-4 text-xs">
+                      <td className="px-5 py-4 text-xs whitespace-nowrap">
                         <p className="font-bold text-slate-900 text-sm">{formatCurrency(c.totalAmount)}</p>
                         <p className="text-amber-600 font-semibold mt-0.5">Cọc: {formatCurrency(c.deposit)}</p>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 whitespace-nowrap">
                         <Badge label={c.status} />
                       </td>
-                      <td className="px-5 py-4 text-right">
+                      <td className="px-5 py-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => {
@@ -409,6 +421,17 @@ export default function ContractsPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {!loading && filteredContracts.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredContracts.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
+          )}
         </div>
       </div>
 

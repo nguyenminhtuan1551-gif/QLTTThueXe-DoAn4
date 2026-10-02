@@ -15,6 +15,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { Header } from '../../../components/Header';
+import { Pagination } from '../../../components/Pagination';
 import { dashboardService } from '../../../services/dashboardService';
 import { RevenueReportData } from '../../../types';
 
@@ -27,6 +28,8 @@ export default function ReportsPage() {
   const [toDate, setToDate] = useState(todayStr);
   const [report, setReport] = useState<RevenueReportData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -49,6 +52,7 @@ export default function ReportsPage() {
       const response = await dashboardService.getRevenueReport({ fromDate, toDate });
       if (response.success && response.data) {
         setReport(response.data);
+        setCurrentPage(1);
       }
     } catch (err: any) {
       showToast(err.message || 'Không thể tải báo cáo doanh thu.', 'error');
@@ -135,6 +139,12 @@ export default function ReportsPage() {
     document.body.removeChild(link);
     showToast('Xuất file thống kê Excel / CSV thành công!');
   };
+
+  const allItems = report?.items || [];
+  const paginatedItems = allItems.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   return (
     <div className="flex-1 min-w-0">
@@ -285,14 +295,14 @@ export default function ReportsPage() {
             <table className="w-full text-left text-sm text-slate-600">
               <thead className="bg-slate-50 text-slate-500 font-semibold text-xs uppercase border-b border-slate-200">
                 <tr>
-                  <th className="px-5 py-3.5">Mã Xe</th>
-                  <th className="px-5 py-3.5">Phương Tiện</th>
-                  <th className="px-5 py-3.5">Biển Số</th>
-                  <th className="px-5 py-3.5 text-center">Lượt Thuê</th>
-                  <th className="px-5 py-3.5 text-right">Doanh Thu Thuê</th>
-                  <th className="px-5 py-3.5 text-right">Chi Phí Bảo Trì</th>
-                  <th className="px-5 py-3.5 text-right">Thu Tiền Phạt</th>
-                  <th className="px-5 py-3.5 text-right">Lợi Nhuận Ròng</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Mã Xe</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Phương Tiện</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Biển Số</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap text-center">Lượt Thuê</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap text-right">Doanh Thu Thuê</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap text-right">Chi Phí Bảo Trì</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap text-right">Thu Tiền Phạt</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap text-right">Lợi Nhuận Ròng</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-xs">
@@ -313,32 +323,32 @@ export default function ReportsPage() {
                   </tr>
                 ) : (
                   <>
-                    {report.items.map((item) => (
+                    {paginatedItems.map((item) => (
                       <tr key={item.carId} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="px-5 py-3.5 font-bold text-slate-900 font-mono">
+                        <td className="px-5 py-3.5 font-bold text-slate-900 font-mono whitespace-nowrap">
                           {item.carId}
                         </td>
-                        <td className="px-5 py-3.5 font-bold text-slate-800">
+                        <td className="px-5 py-3.5 font-bold text-slate-800 whitespace-nowrap">
                           {item.carName}
                         </td>
-                        <td className="px-5 py-3.5">
-                          <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-300 font-mono font-bold tracking-wider">
+                        <td className="px-5 py-3.5 whitespace-nowrap">
+                          <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-300 font-mono font-bold tracking-wider whitespace-nowrap inline-block">
                             {item.carPlate}
                           </span>
                         </td>
-                        <td className="px-5 py-3.5 text-center font-bold text-blue-600">
+                        <td className="px-5 py-3.5 text-center font-bold text-blue-600 whitespace-nowrap">
                           {item.rentals}
                         </td>
-                        <td className="px-5 py-3.5 text-right font-bold text-slate-900">
+                        <td className="px-5 py-3.5 text-right font-bold text-slate-900 whitespace-nowrap">
                           {formatCurrency(item.revenue)}
                         </td>
-                        <td className="px-5 py-3.5 text-right text-amber-700 font-semibold">
+                        <td className="px-5 py-3.5 text-right text-amber-700 font-semibold whitespace-nowrap">
                           {item.maintenanceCost > 0 ? `- ${formatCurrency(item.maintenanceCost)}` : '0 đ'}
                         </td>
-                        <td className="px-5 py-3.5 text-right text-purple-700 font-semibold">
+                        <td className="px-5 py-3.5 text-right text-purple-700 font-semibold whitespace-nowrap">
                           {item.penaltyFee > 0 ? `+ ${formatCurrency(item.penaltyFee)}` : '0 đ'}
                         </td>
-                        <td className="px-5 py-3.5 text-right font-extrabold text-emerald-700 text-sm">
+                        <td className="px-5 py-3.5 text-right font-extrabold text-emerald-700 text-sm whitespace-nowrap">
                           {formatCurrency(item.totalAmount)}
                         </td>
                       </tr>
@@ -346,22 +356,22 @@ export default function ReportsPage() {
 
                     {/* Summary Row */}
                     <tr className="bg-slate-100/90 font-bold border-t-2 border-slate-300 text-xs">
-                      <td colSpan={3} className="px-5 py-4 text-slate-900 uppercase">
+                      <td colSpan={3} className="px-5 py-4 text-slate-900 uppercase whitespace-nowrap">
                         TỔNG HỢP TOÀN TRUNG TÂM ({report.summary.cars} xe)
                       </td>
-                      <td className="px-5 py-4 text-center font-extrabold text-blue-700">
+                      <td className="px-5 py-4 text-center font-extrabold text-blue-700 whitespace-nowrap">
                         {report.summary.rentals}
                       </td>
-                      <td className="px-5 py-4 text-right font-extrabold text-slate-900">
+                      <td className="px-5 py-4 text-right font-extrabold text-slate-900 whitespace-nowrap">
                         {formatCurrency(report.summary.revenue)}
                       </td>
-                      <td className="px-5 py-4 text-right font-extrabold text-amber-700">
+                      <td className="px-5 py-4 text-right font-extrabold text-amber-700 whitespace-nowrap">
                         - {formatCurrency(report.summary.maintenanceCost)}
                       </td>
-                      <td className="px-5 py-4 text-right font-extrabold text-purple-700">
+                      <td className="px-5 py-4 text-right font-extrabold text-purple-700 whitespace-nowrap">
                         + {formatCurrency(report.summary.penaltyFee)}
                       </td>
-                      <td className="px-5 py-4 text-right font-black text-emerald-700 text-base">
+                      <td className="px-5 py-4 text-right font-black text-emerald-700 text-base whitespace-nowrap">
                         {formatCurrency(report.summary.totalAmount)}
                       </td>
                     </tr>
@@ -370,6 +380,19 @@ export default function ReportsPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {!loading && allItems.length > 0 && (
+            <div className="print:hidden">
+              <Pagination
+                currentPage={currentPage}
+                totalItems={allItems.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

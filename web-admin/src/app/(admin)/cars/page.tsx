@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Header } from '../../../components/Header';
 import { Badge } from '../../../components/Badge';
+import { Pagination } from '../../../components/Pagination';
 import { carService } from '../../../services/carService';
 import { Car } from '../../../types';
 import { useAuth } from '../../../context/AuthContext';
@@ -63,6 +64,8 @@ export default function CarsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Tất cả');
   const [brandFilter, setBrandFilter] = useState('Tất cả');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -104,6 +107,10 @@ export default function CarsPage() {
     fetchCars();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, brandFilter]);
+
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -133,6 +140,11 @@ export default function CarsPage() {
 
     return true;
   });
+
+  const paginatedCars = filteredCars.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const handleOpenCreateModal = () => {
     setEditingCar(null);
@@ -344,13 +356,13 @@ export default function CarsPage() {
             <table className="w-full text-left text-sm text-slate-600">
               <thead className="bg-slate-50 text-slate-500 font-semibold text-xs uppercase border-b border-slate-200">
                 <tr>
-                  <th className="px-5 py-3.5">Mã Xe</th>
-                  <th className="px-5 py-3.5">Hình Ảnh & Tên Xe</th>
-                  <th className="px-5 py-3.5">Biển Số</th>
-                  <th className="px-5 py-3.5">Thông Số Kỹ Thuật</th>
-                  <th className="px-5 py-3.5">Giá Thuê / Ngày</th>
-                  <th className="px-5 py-3.5">Trạng Thái</th>
-                  <th className="px-5 py-3.5 text-right">Thao Tác</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Mã Xe</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Hình Ảnh & Tên Xe</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Biển Số</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Thông Số Kỹ Thuật</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Giá Thuê / Ngày</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Trạng Thái</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap text-right">Thao Tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
@@ -370,7 +382,7 @@ export default function CarsPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredCars.map((car) => {
+                  paginatedCars.map((car) => {
                     const carImageUrl = car.image
                       ? car.image.startsWith('http')
                         ? car.image
@@ -379,10 +391,10 @@ export default function CarsPage() {
 
                     return (
                       <tr key={car.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="px-5 py-4 font-bold text-slate-900 text-xs">
+                        <td className="px-5 py-4 font-bold text-slate-900 text-xs whitespace-nowrap">
                           {car.id}
                         </td>
-                        <td className="px-5 py-4">
+                        <td className="px-5 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-3">
                             <div className="w-14 h-11 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden relative shrink-0 flex items-center justify-center">
                               {carImageUrl ? (
@@ -406,12 +418,12 @@ export default function CarsPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-5 py-4 font-semibold text-slate-800">
-                          <span className="px-2.5 py-1 rounded bg-slate-100 border border-slate-300 text-xs font-mono font-bold tracking-wider">
+                        <td className="px-5 py-4 font-semibold text-slate-800 whitespace-nowrap">
+                          <span className="px-2.5 py-1 rounded bg-slate-100 border border-slate-300 text-xs font-mono font-bold tracking-wider whitespace-nowrap inline-block">
                             {car.licensePlate}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-xs text-slate-500">
+                        <td className="px-5 py-4 text-xs text-slate-500 whitespace-nowrap">
                           <p className="flex items-center gap-1.5 font-medium text-slate-700">
                             <UsersIcon className="w-3.5 h-3.5 text-slate-400" />
                             {car.seatCount} chỗ • {car.fuelType}
@@ -421,13 +433,13 @@ export default function CarsPage() {
                             Đời {car.year}
                           </p>
                         </td>
-                        <td className="px-5 py-4 font-bold text-blue-600">
+                        <td className="px-5 py-4 font-bold text-blue-600 whitespace-nowrap">
                           {formatCurrency(car.price)}
                         </td>
-                        <td className="px-5 py-4">
+                        <td className="px-5 py-4 whitespace-nowrap">
                           <Badge label={car.status} />
                         </td>
-                        <td className="px-5 py-4 text-right">
+                        <td className="px-5 py-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => handleOpenUploadModal(car)}
@@ -461,6 +473,17 @@ export default function CarsPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {!loading && filteredCars.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredCars.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
+          )}
         </div>
       </div>
 

@@ -18,6 +18,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { Header } from '../../../components/Header';
+import { Pagination } from '../../../components/Pagination';
 import { inspectionService } from '../../../services/inspectionService';
 import { carService } from '../../../services/carService';
 import { Inspection, Car } from '../../../types';
@@ -47,6 +48,8 @@ export default function InspectionPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Tất cả');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -86,6 +89,10 @@ export default function InspectionPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter]);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '--';
@@ -127,6 +134,11 @@ export default function InspectionPage() {
 
     return true;
   });
+
+  const paginatedInspections = filteredInspections.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const handleOpenCreateModal = () => {
     setEditingInspection(null);
@@ -322,14 +334,14 @@ export default function InspectionPage() {
             <table className="w-full text-left text-sm text-slate-600">
               <thead className="bg-slate-50 text-slate-500 font-semibold text-xs uppercase border-b border-slate-200">
                 <tr>
-                  <th className="px-5 py-3.5">Mã ĐK</th>
-                  <th className="px-5 py-3.5">Xe Được Kiểm Định</th>
-                  <th className="px-5 py-3.5">Biển Số</th>
-                  <th className="px-5 py-3.5">Ngày Đăng Kiểm</th>
-                  <th className="px-5 py-3.5">Ngày Hết Hạn</th>
-                  <th className="px-5 py-3.5">Thời Gian Còn Lại</th>
-                  <th className="px-5 py-3.5">Tình Trạng</th>
-                  <th className="px-5 py-3.5 text-right">Thao Tác</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Mã ĐK</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Xe Được Kiểm Định</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Biển Số</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Ngày Đăng Kiểm</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Ngày Hết Hạn</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Thời Gian Còn Lại</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Tình Trạng</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap text-right">Thao Tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
@@ -349,36 +361,36 @@ export default function InspectionPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredInspections.map((item) => {
+                  paginatedInspections.map((item) => {
                     const daysLeft = getDaysLeft(item.expiryDate);
 
                     return (
                       <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="px-5 py-4 font-bold text-slate-900 text-xs">
+                        <td className="px-5 py-4 font-bold text-slate-900 text-xs whitespace-nowrap">
                           {item.id}
                         </td>
-                        <td className="px-5 py-4">
+                        <td className="px-5 py-4 whitespace-nowrap">
                           <p className="font-bold text-slate-900 leading-snug">{item.carName}</p>
                           <p className="text-xs text-slate-400">Mã xe: {item.carId}</p>
                         </td>
-                        <td className="px-5 py-4 font-semibold text-slate-800">
-                          <span className="px-2.5 py-1 rounded bg-slate-100 border border-slate-300 text-xs font-mono font-bold tracking-wider">
+                        <td className="px-5 py-4 font-semibold text-slate-800 whitespace-nowrap">
+                          <span className="px-2.5 py-1 rounded bg-slate-100 border border-slate-300 text-xs font-mono font-bold tracking-wider whitespace-nowrap inline-block">
                             {item.carPlate}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-xs text-slate-600">
+                        <td className="px-5 py-4 text-xs text-slate-600 whitespace-nowrap">
                           <div className="flex items-center gap-1.5 font-medium">
                             <Calendar className="w-3.5 h-3.5 text-slate-400" />
                             {formatDate(item.inspectionDate)}
                           </div>
                         </td>
-                        <td className="px-5 py-4 text-xs font-bold text-slate-800">
+                        <td className="px-5 py-4 text-xs font-bold text-slate-800 whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
                             <Clock className="w-3.5 h-3.5 text-slate-400" />
                             {formatDate(item.expiryDate)}
                           </div>
                         </td>
-                        <td className="px-5 py-4 text-xs font-semibold">
+                        <td className="px-5 py-4 text-xs font-semibold whitespace-nowrap">
                           {daysLeft > 0 ? (
                             <span className={daysLeft <= 30 ? 'text-amber-600' : 'text-slate-600'}>
                               Còn {daysLeft} ngày
@@ -387,7 +399,7 @@ export default function InspectionPage() {
                             <span className="text-red-600 font-bold">Quá hạn {Math.abs(daysLeft)} ngày</span>
                           )}
                         </td>
-                        <td className="px-5 py-4">
+                        <td className="px-5 py-4 whitespace-nowrap">
                           {item.status === 'Còn hạn' && (
                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                               Còn hạn
@@ -404,7 +416,7 @@ export default function InspectionPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-5 py-4 text-right">
+                        <td className="px-5 py-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => handleOpenEditModal(item)}
@@ -431,6 +443,17 @@ export default function InspectionPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {!loading && filteredInspections.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredInspections.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
+          )}
         </div>
       </div>
 

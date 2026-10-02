@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Header } from '../../../components/Header';
 import { Badge } from '../../../components/Badge';
+import { Pagination } from '../../../components/Pagination';
 import { customerService } from '../../../services/customerService';
 import { Customer, Contract } from '../../../types';
 
@@ -24,6 +25,8 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Customer Detail & History Modal State
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -48,6 +51,10 @@ export default function CustomersPage() {
   useEffect(() => {
     fetchCustomers();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
 
   const handleOpenDetailModal = async (cust: Customer) => {
     setSelectedCustomer(cust);
@@ -97,6 +104,11 @@ export default function CustomersPage() {
     return true;
   });
 
+  const paginatedCustomers = filtered.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   return (
     <div className="flex-1 min-w-0">
       <Header
@@ -133,13 +145,13 @@ export default function CustomersPage() {
             <table className="w-full text-left text-sm text-slate-600">
               <thead className="bg-slate-50 text-slate-500 font-semibold text-xs uppercase border-b border-slate-200">
                 <tr>
-                  <th className="px-5 py-3.5">Mã KH</th>
-                  <th className="px-5 py-3.5">Họ & Tên</th>
-                  <th className="px-5 py-3.5">Thông Tin Liên Hệ</th>
-                  <th className="px-5 py-3.5">CCCD / CMND</th>
-                  <th className="px-5 py-3.5">Số GPLX</th>
-                  <th className="px-5 py-3.5">Địa Chỉ Thường Trú</th>
-                  <th className="px-5 py-3.5 text-right">Lịch Sử Thuê</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Mã KH</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Họ & Tên</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Thông Tin Liên Hệ</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">CCCD / CMND</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Số GPLX</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Địa Chỉ Thường Trú</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap text-right">Lịch Sử Thuê</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
@@ -159,28 +171,28 @@ export default function CustomersPage() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((c) => (
+                  paginatedCustomers.map((c) => (
                     <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-5 py-4 font-bold text-slate-900 text-xs font-mono">
+                      <td className="px-5 py-4 font-bold text-slate-900 text-xs font-mono whitespace-nowrap">
                         {c.id}
                       </td>
-                      <td className="px-5 py-4 font-bold text-slate-900">
+                      <td className="px-5 py-4 font-bold text-slate-900 whitespace-nowrap">
                         {c.fullName}
                       </td>
-                      <td className="px-5 py-4 text-xs">
+                      <td className="px-5 py-4 text-xs whitespace-nowrap">
                         <p className="font-semibold text-slate-800">{c.phone}</p>
                         <p className="text-slate-400 mt-0.5">{c.email}</p>
                       </td>
-                      <td className="px-5 py-4 font-mono text-xs text-slate-700">
+                      <td className="px-5 py-4 font-mono text-xs text-slate-700 whitespace-nowrap">
                         {c.cccd || '—'}
                       </td>
-                      <td className="px-5 py-4 text-xs font-medium text-slate-700">
+                      <td className="px-5 py-4 text-xs font-medium text-slate-700 whitespace-nowrap">
                         {c.driverLicense || '—'}
                       </td>
-                      <td className="px-5 py-4 text-xs text-slate-500 max-w-[200px] truncate" title={c.address}>
+                      <td className="px-5 py-4 text-xs text-slate-500 min-w-[200px] max-w-[260px] truncate" title={c.address}>
                         {c.address || '—'}
                       </td>
-                      <td className="px-5 py-4 text-right">
+                      <td className="px-5 py-4 text-right whitespace-nowrap">
                         <button
                           onClick={() => handleOpenDetailModal(c)}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-blue-600 hover:bg-blue-50 border border-blue-200 transition-colors"
@@ -195,6 +207,17 @@ export default function CustomersPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {!loading && filtered.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filtered.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
+          )}
         </div>
       </div>
 

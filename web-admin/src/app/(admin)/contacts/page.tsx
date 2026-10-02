@@ -15,6 +15,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Header } from '../../../components/Header';
+import { Pagination } from '../../../components/Pagination';
 import { contactService } from '../../../services/contactService';
 import { ContactMessage } from '../../../types';
 
@@ -23,6 +24,8 @@ export default function ContactsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Tất cả');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Toast State
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -49,6 +52,10 @@ export default function ContactsPage() {
   useEffect(() => {
     fetchContacts();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter]);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '--';
@@ -92,6 +99,11 @@ export default function ContactsPage() {
 
     return true;
   });
+
+  const paginatedContacts = filteredContacts.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   return (
     <div className="flex-1 min-w-0">
@@ -195,13 +207,13 @@ export default function ContactsPage() {
             <table className="w-full text-left text-sm text-slate-600">
               <thead className="bg-slate-50 text-slate-500 font-semibold text-xs uppercase border-b border-slate-200">
                 <tr>
-                  <th className="px-5 py-3.5">Mã</th>
-                  <th className="px-5 py-3.5">Người Gửi</th>
-                  <th className="px-5 py-3.5">Liên Lạc</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Mã</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Người Gửi</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Liên Lạc</th>
                   <th className="px-5 py-3.5">Nội Dung Tin Nhắn</th>
-                  <th className="px-5 py-3.5">Thời Gian Gửi</th>
-                  <th className="px-5 py-3.5">Tình Trạng</th>
-                  <th className="px-5 py-3.5 text-right">Hành Động</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Thời Gian Gửi</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Tình Trạng</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap text-right">Hành Động</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
@@ -221,27 +233,27 @@ export default function ContactsPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredContacts.map((c) => (
+                  paginatedContacts.map((c) => (
                     <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-5 py-4 font-bold text-slate-900 text-xs font-mono">
+                      <td className="px-5 py-4 font-bold text-slate-900 text-xs font-mono whitespace-nowrap">
                         #{c.id}
                       </td>
-                      <td className="px-5 py-4 font-bold text-slate-900">
+                      <td className="px-5 py-4 font-bold text-slate-900 whitespace-nowrap">
                         {c.fullName}
                       </td>
-                      <td className="px-5 py-4 text-xs">
+                      <td className="px-5 py-4 text-xs whitespace-nowrap">
                         <p className="font-semibold text-slate-800">{c.phone}</p>
                         <p className="text-slate-400 mt-0.5">{c.email}</p>
                       </td>
-                      <td className="px-5 py-4 text-xs text-slate-700 max-w-sm">
+                      <td className="px-5 py-4 text-xs text-slate-700 min-w-[200px] max-w-sm">
                         <p className="line-clamp-2 leading-relaxed bg-slate-50 p-2 rounded-lg border border-slate-100" title={c.message}>
                           {c.message}
                         </p>
                       </td>
-                      <td className="px-5 py-4 text-xs text-slate-500 font-medium">
+                      <td className="px-5 py-4 text-xs text-slate-500 font-medium whitespace-nowrap">
                         {formatDate(c.createdAt)}
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 whitespace-nowrap">
                         {c.status === 'Mới' ? (
                           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
                             Mới
@@ -252,7 +264,7 @@ export default function ContactsPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-right">
+                      <td className="px-5 py-4 text-right whitespace-nowrap">
                         {c.status === 'Mới' ? (
                           <button
                             onClick={() => handleUpdateStatus(c.id, 'Đã phản hồi')}
@@ -271,6 +283,17 @@ export default function ContactsPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {!loading && filteredContacts.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredContacts.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
+          )}
         </div>
       </div>
     </div>

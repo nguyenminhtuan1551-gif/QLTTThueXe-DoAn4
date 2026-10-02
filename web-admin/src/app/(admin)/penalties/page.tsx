@@ -17,6 +17,7 @@ import {
   Car as CarIcon,
 } from 'lucide-react';
 import { Header } from '../../../components/Header';
+import { Pagination } from '../../../components/Pagination';
 import { penaltyService } from '../../../services/penaltyService';
 import { returnService } from '../../../services/returnService';
 import { PenaltyRecord, ReturnRecord } from '../../../types';
@@ -29,6 +30,8 @@ export default function PenaltiesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('Tất cả');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Detail Modal State
   const [selectedPenalty, setSelectedPenalty] = useState<PenaltyRecord | null>(null);
@@ -65,6 +68,10 @@ export default function PenaltiesPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, typeFilter]);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -104,6 +111,11 @@ export default function PenaltiesPage() {
 
     return true;
   });
+
+  const paginatedPenalties = filteredPenalties.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const handleDeletePenalty = async (p: PenaltyRecord) => {
     if (!isAdmin) {
@@ -243,14 +255,14 @@ export default function PenaltiesPage() {
             <table className="w-full text-left text-sm text-slate-600">
               <thead className="bg-slate-50 text-slate-500 font-semibold text-xs uppercase border-b border-slate-200">
                 <tr>
-                  <th className="px-5 py-3.5">Mã Phạt</th>
-                  <th className="px-5 py-3.5">Mã Phiếu Trả</th>
-                  <th className="px-5 py-3.5">Khách Hàng</th>
-                  <th className="px-5 py-3.5">Phương Tiện</th>
-                  <th className="px-5 py-3.5">Loại Vi Phạm</th>
-                  <th className="px-5 py-3.5">Số Tiền Phạt</th>
-                  <th className="px-5 py-3.5">Lý Do / Ghi Chú</th>
-                  <th className="px-5 py-3.5 text-right">Thao Tác</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Mã Phạt</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Mã Phiếu Trả</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Khách Hàng</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Phương Tiện</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Loại Vi Phạm</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Số Tiền Phạt</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Lý Do / Ghi Chú</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap text-right">Thao Tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
@@ -270,39 +282,39 @@ export default function PenaltiesPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredPenalties.map((p: any) => (
+                  paginatedPenalties.map((p: any) => (
                     <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-5 py-4 font-bold text-slate-900 text-xs font-mono">
+                      <td className="px-5 py-4 font-bold text-slate-900 text-xs font-mono whitespace-nowrap">
                         {p.id}
                       </td>
-                      <td className="px-5 py-4 font-mono text-blue-600 font-bold text-xs">
+                      <td className="px-5 py-4 font-mono text-blue-600 font-bold text-xs whitespace-nowrap">
                         {p.returnId}
                       </td>
-                      <td className="px-5 py-4 font-bold text-slate-900">
+                      <td className="px-5 py-4 font-bold text-slate-900 whitespace-nowrap">
                         {p.customerName || 'Khách hàng'}
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 whitespace-nowrap">
                         <p className="font-semibold text-slate-800">{p.carName || 'Phương tiện'}</p>
                         {p.carPlate && (
-                          <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-300 text-[11px] font-mono font-bold tracking-wider inline-block mt-0.5">
+                          <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-300 text-[11px] font-mono font-bold tracking-wider inline-block mt-0.5 whitespace-nowrap">
                             {p.carPlate}
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
                           {p.type}
                         </span>
                       </td>
-                      <td className="px-5 py-4 font-bold text-red-600 text-sm">
+                      <td className="px-5 py-4 font-bold text-red-600 text-sm whitespace-nowrap">
                         {formatCurrency(p.amount)}
                       </td>
-                      <td className="px-5 py-4 text-xs text-slate-600 max-w-sm">
+                      <td className="px-5 py-4 text-xs text-slate-600 min-w-[200px] max-w-sm">
                         <p className="line-clamp-2 leading-relaxed" title={p.notes}>
                           {p.notes || 'Không có ghi chú thêm'}
                         </p>
                       </td>
-                      <td className="px-5 py-4 text-right">
+                      <td className="px-5 py-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => setSelectedPenalty(p)}
@@ -329,6 +341,17 @@ export default function PenaltiesPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {!loading && filteredPenalties.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredPenalties.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
+          )}
         </div>
       </div>
 

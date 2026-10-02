@@ -18,6 +18,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { Header } from '../../../components/Header';
+import { Pagination } from '../../../components/Pagination';
 import { maintenanceService } from '../../../services/maintenanceService';
 import { carService } from '../../../services/carService';
 import { Maintenance, Car } from '../../../types';
@@ -49,6 +50,8 @@ export default function MaintenancePage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Tất cả');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -89,6 +92,10 @@ export default function MaintenancePage() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter]);
+
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -128,6 +135,11 @@ export default function MaintenancePage() {
 
     return true;
   });
+
+  const paginatedRecords = filteredRecords.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const handleOpenCreateModal = () => {
     setEditingRecord(null);
@@ -357,15 +369,15 @@ export default function MaintenancePage() {
             <table className="w-full text-left text-sm text-slate-600">
               <thead className="bg-slate-50 text-slate-500 font-semibold text-xs uppercase border-b border-slate-200">
                 <tr>
-                  <th className="px-5 py-3.5">Mã Phiếu</th>
-                  <th className="px-5 py-3.5">Xe Bảo Trì</th>
-                  <th className="px-5 py-3.5">Biển Số</th>
-                  <th className="px-5 py-3.5">Ngày Bắt Đầu</th>
-                  <th className="px-5 py-3.5">Ngày Hoàn Thành</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Mã Phiếu</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Xe Bảo Trì</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Biển Số</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Ngày Bắt Đầu</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Ngày Hoàn Thành</th>
                   <th className="px-5 py-3.5">Nội Dung Chi Tiết</th>
-                  <th className="px-5 py-3.5">Chi Phí</th>
-                  <th className="px-5 py-3.5">Trạng Thái</th>
-                  <th className="px-5 py-3.5 text-right">Thao Tác</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Chi Phí</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Trạng Thái</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap text-right">Thao Tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
@@ -385,27 +397,27 @@ export default function MaintenancePage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredRecords.map((item) => (
+                  paginatedRecords.map((item) => (
                     <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-5 py-4 font-bold text-slate-900 text-xs">
+                      <td className="px-5 py-4 font-bold text-slate-900 text-xs whitespace-nowrap">
                         {item.id}
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 whitespace-nowrap">
                         <p className="font-bold text-slate-900 leading-snug">{item.carName}</p>
                         <p className="text-xs text-slate-400">Mã xe: {item.carId}</p>
                       </td>
-                      <td className="px-5 py-4 font-semibold text-slate-800">
-                        <span className="px-2.5 py-1 rounded bg-slate-100 border border-slate-300 text-xs font-mono font-bold tracking-wider">
+                      <td className="px-5 py-4 font-semibold text-slate-800 whitespace-nowrap">
+                        <span className="px-2.5 py-1 rounded bg-slate-100 border border-slate-300 text-xs font-mono font-bold tracking-wider whitespace-nowrap inline-block">
                           {item.carPlate}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-xs text-slate-600">
+                      <td className="px-5 py-4 text-xs text-slate-600 whitespace-nowrap">
                         <div className="flex items-center gap-1.5 font-medium">
                           <Calendar className="w-3.5 h-3.5 text-slate-400" />
                           {formatDate(item.date)}
                         </div>
                       </td>
-                      <td className="px-5 py-4 text-xs">
+                      <td className="px-5 py-4 text-xs whitespace-nowrap">
                         {item.completedDate ? (
                           <div className="flex items-center gap-1.5 font-bold text-emerald-700">
                             <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -418,13 +430,13 @@ export default function MaintenancePage() {
                           </div>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-xs text-slate-700 max-w-xs">
+                      <td className="px-5 py-4 text-xs text-slate-700 min-w-[220px] max-w-sm">
                         <p className="line-clamp-2 leading-relaxed">{item.content}</p>
                       </td>
-                      <td className="px-5 py-4 font-bold text-blue-600">
+                      <td className="px-5 py-4 font-bold text-blue-600 whitespace-nowrap">
                         {formatCurrency(item.cost)}
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 whitespace-nowrap">
                         {item.status === 'Đang bảo trì' ? (
                           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
                             Đang bảo trì
@@ -435,7 +447,7 @@ export default function MaintenancePage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-right">
+                      <td className="px-5 py-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           {item.status === 'Đang bảo trì' && (
                             <button
@@ -471,6 +483,17 @@ export default function MaintenancePage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {!loading && filteredRecords.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredRecords.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
+          )}
         </div>
       </div>
 

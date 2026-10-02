@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { Header } from '../../../components/Header';
+import { Pagination } from '../../../components/Pagination';
 import { returnService } from '../../../services/returnService';
 import { contractService } from '../../../services/contractService';
 import { ReturnRecord, Contract } from '../../../types';
@@ -65,6 +66,8 @@ export default function ReturnsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('Tất cả');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -104,6 +107,10 @@ export default function ReturnsPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, paymentFilter]);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -208,6 +215,11 @@ export default function ReturnsPage() {
     return true;
   });
 
+  const paginatedReturns = filteredReturns.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   return (
     <div className="flex-1 min-w-0">
       <Header
@@ -289,15 +301,15 @@ export default function ReturnsPage() {
             <table className="w-full text-left text-sm text-slate-600">
               <thead className="bg-slate-50 text-slate-500 font-semibold text-xs uppercase border-b border-slate-200">
                 <tr>
-                  <th className="px-5 py-3.5">Mã Phiếu</th>
-                  <th className="px-5 py-3.5">Mã Hợp Đồng</th>
-                  <th className="px-5 py-3.5">Khách Hàng</th>
-                  <th className="px-5 py-3.5">Xe Trả</th>
-                  <th className="px-5 py-3.5">Ngày Trả Thực Tế</th>
-                  <th className="px-5 py-3.5">Tình Trạng Khi Nhận</th>
-                  <th className="px-5 py-3.5">Tiền Quyết Toán</th>
-                  <th className="px-5 py-3.5">Hình Thức</th>
-                  <th className="px-5 py-3.5 text-right">Xem</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Mã Phiếu</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Mã Hợp Đồng</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Khách Hàng</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Xe Trả</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Ngày Trả Thực Tế</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Tình Trạng Khi Nhận</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Tiền Quyết Toán</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap">Hình Thức</th>
+                  <th className="px-5 py-3.5 whitespace-nowrap text-right">Xem</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
@@ -317,49 +329,49 @@ export default function ReturnsPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredReturns.map((r) => (
+                  paginatedReturns.map((r) => (
                     <tr key={r.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-5 py-4 font-bold text-slate-900 text-xs font-mono">
+                      <td className="px-5 py-4 font-bold text-slate-900 text-xs font-mono whitespace-nowrap">
                         {r.id}
                       </td>
-                      <td className="px-5 py-4 font-mono text-blue-600 font-bold text-xs">
+                      <td className="px-5 py-4 font-mono text-blue-600 font-bold text-xs whitespace-nowrap">
                         {r.contractId}
                       </td>
-                      <td className="px-5 py-4 font-bold text-slate-900">
+                      <td className="px-5 py-4 font-bold text-slate-900 whitespace-nowrap">
                         {r.customerName}
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 whitespace-nowrap">
                         <p className="font-semibold text-slate-800">{r.carName}</p>
-                        <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-300 text-[11px] font-mono font-bold tracking-wider inline-block mt-0.5">
+                        <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-300 text-[11px] font-mono font-bold tracking-wider inline-block mt-0.5 whitespace-nowrap">
                           {r.carPlate}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-xs font-medium text-slate-700">
+                      <td className="px-5 py-4 text-xs font-medium text-slate-700 whitespace-nowrap">
                         <p>{formatDate(r.actualReturnDate)}</p>
                         <p className="text-slate-400 mt-0.5">{r.actualDays} ngày thực tế</p>
                       </td>
-                      <td className="px-5 py-4 text-xs text-slate-600 max-w-xs">
-                        <p className="truncate" title={r.carCondition}>
+                      <td className="px-5 py-4 text-xs text-slate-600 min-w-[200px] max-w-xs">
+                        <p className="line-clamp-2" title={r.carCondition}>
                           {r.carCondition}
                         </p>
                         {(r.penaltyFee ?? 0) > 0 && (
-                          <span className="text-[11px] text-red-600 font-bold">
+                          <span className="text-[11px] text-red-600 font-bold mt-0.5 inline-block">
                             ⚠️ Phạt: +{formatCurrency(r.penaltyFee!)}
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-xs">
+                      <td className="px-5 py-4 text-xs whitespace-nowrap">
                         <p className="font-bold text-emerald-600 text-sm">
                           {formatCurrency(r.totalPayment)}
                         </p>
                         <p className="text-slate-400 mt-0.5">Thuê: {formatCurrency(r.totalRent)}</p>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                           {r.paymentMethod}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-right">
+                      <td className="px-5 py-4 text-right whitespace-nowrap">
                         <button
                           onClick={() => setSelectedReturn(r)}
                           className="p-1.5 rounded-md text-slate-500 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-colors"
@@ -374,6 +386,17 @@ export default function ReturnsPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {!loading && filteredReturns.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredReturns.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
+          )}
         </div>
       </div>
 
