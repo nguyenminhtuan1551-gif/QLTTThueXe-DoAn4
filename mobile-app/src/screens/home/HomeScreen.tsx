@@ -137,7 +137,7 @@ export const HomeScreen: React.FC = () => {
         <View style={styles.userCol}>
           <Text style={styles.greetingText}>Xin chào 👋</Text>
           <Text style={styles.userName}>{user?.fullName || 'Quý khách hàng'}</Text>
-          <Text style={styles.userLocation}>📍 Khu vực Hà Nội</Text>
+          <Text style={styles.userLocation}>📍 Phục vụ toàn quốc</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <TouchableOpacity
@@ -188,7 +188,7 @@ export const HomeScreen: React.FC = () => {
           <View style={styles.heroGlow} />
           <View style={styles.heroTextContainer}>
             <View style={styles.promoPill}>
-              <Text style={styles.promoPillText}>🚗 DỊCH VỤ THUÊ XE UY TÍN HÀ NỘI</Text>
+              <Text style={styles.promoPillText}>🚗 DỊCH VỤ THUÊ XE CÓ TÀI XẾ TOÀN QUỐC</Text>
             </View>
             <Text style={styles.heroTitle}>Thuê Xe Có Tài Xế</Text>
             <Text style={styles.heroSubtitle}>

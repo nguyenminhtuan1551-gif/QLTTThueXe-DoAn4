@@ -38,20 +38,24 @@ const initialFilterState: FilterState = {
   status: 'Tất cả',
 };
 
-const HANOI_DISTRICTS = [
+const NATIONWIDE_LOCATIONS = [
   'Tất cả khu vực',
   'Hà Nội',
+  'TP. Hồ Chí Minh',
+  'Đà Nẵng',
+  'Hải Phòng',
+  'Cần Thơ',
+  'Nha Trang',
+  'Đà Lạt',
+  'Vũng Tàu',
+  'Quảng Ninh',
+  'Bình Dương',
+  'Đồng Nai',
+  'Huế',
+  'Phú Quốc',
   'Cầu Giấy',
-  'Nam Từ Liêm',
-  'Đống Đa',
-  'Ba Đình',
-  'Hà Đông',
-  'Thanh Xuân',
-  'Hoàn Kiếm',
-  'Tây Hồ',
-  'Long Biên',
-  'Hai Bà Trưng',
-  'Nội Bài',
+  'Quận 1',
+  'Sơn Trà',
 ];
 
 export const CarListScreen: React.FC = () => {
@@ -225,7 +229,7 @@ export const CarListScreen: React.FC = () => {
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
       <Header
         title="Danh Mục Xe Cho Thuê"
-        subtitle="Có tài xế phục vụ tại Hà Nội"
+        subtitle="Có tài xế phục vụ toàn quốc"
         onRefresh={onRefresh}
       />
 
@@ -274,7 +278,7 @@ export const CarListScreen: React.FC = () => {
           <View style={styles.locationSearchBox}>
             <Text style={styles.locationIcon}>📍</Text>
             <TextInput
-              placeholder="Tìm theo địa chỉ, khu vực (Cầu Giấy, Nam Từ Liêm, Hà Nội...)"
+              placeholder="Tìm theo địa chỉ, khu vực (Hà Nội, TP.HCM, Đà Nẵng, Cầu Giấy, Quận 1...)"
               placeholderTextColor={COLORS.placeholder}
               value={locationSearch}
               onChangeText={(text) => {
@@ -297,13 +301,13 @@ export const CarListScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Quick Hanoi District Pills */}
+        {/* Quick Nationwide Location Pills */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.districtRow}
         >
-          {HANOI_DISTRICTS.map((district) => {
+          {NATIONWIDE_LOCATIONS.map((district) => {
             const isSelected =
               (district === 'Tất cả khu vực' && !locationSearch) ||
               (district !== 'Tất cả khu vực' &&

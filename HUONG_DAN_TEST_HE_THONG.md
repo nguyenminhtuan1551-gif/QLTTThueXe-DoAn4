@@ -16,7 +16,9 @@ Tài liệu này hướng dẫn chi tiết các bước kiểm thử chức năn
    ```
 3. Import 2 file theo đúng thứ tự:
    * **File 1**: `backend/database/schema.sql` (Tạo bảng `NguoiDung`, `KhachHang`, `NhanVien`, `Xe`,...)
-   * **File 2**: `backend/database/seed.sql` (Nạp dữ liệu mẫu ban đầu)
+   * **File 2**: Chọn 1 trong 2 bộ seed dữ liệu tùy nhu cầu:
+     - **Lựa chọn A (Bộ 1000 bản ghi lớn toàn quốc - Khuyên dùng để test hiệu năng)**: Import file `backend/database/seed_1000.sql` (Bao gồm 1000 xe, 1000 khách hàng, 1000 hợp đồng, 1000 hồ sơ đăng kiểm, 1000 bảo trì trải dài khắp Hà Nội, TP.HCM, Đà Nẵng, Hải Phòng, Cần Thơ, Nha Trang, Đà Lạt, Vũng Tàu, Bình Dương, Đồng Nai, Quảng Ninh, Phú Quốc...).
+     - **Lựa chọn B (Bộ 20 xe gọn nhẹ ban đầu)**: Import file `backend/database/seed.sql`.
 
 ---
 
