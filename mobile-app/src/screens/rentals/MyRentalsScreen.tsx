@@ -101,6 +101,7 @@ export const MyRentalsScreen: React.FC = () => {
       <Header
         title="Đơn Thuê Của Tôi"
         subtitle="Quản lý & theo dõi tiến độ hợp đồng"
+        onRefresh={onRefresh}
       />
 
       {/* Search Input Bar */}

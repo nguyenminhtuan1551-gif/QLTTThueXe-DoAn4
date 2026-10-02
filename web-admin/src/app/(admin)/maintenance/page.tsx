@@ -15,6 +15,7 @@ import {
   DollarSign,
   Calendar,
   Check,
+  Clock,
 } from 'lucide-react';
 import { Header } from '../../../components/Header';
 import { maintenanceService } from '../../../services/maintenanceService';
@@ -26,6 +27,7 @@ interface MaintenanceFormData {
   id?: string;
   carId: string;
   date: string;
+  completedDate?: string | null;
   content: string;
   cost: number;
   status: 'Đang bảo trì' | 'Hoàn thành';
@@ -34,6 +36,7 @@ interface MaintenanceFormData {
 const initialFormData: MaintenanceFormData = {
   carId: '',
   date: new Date().toISOString().slice(0, 10),
+  completedDate: null,
   content: '',
   cost: 500000,
   status: 'Đang bảo trì',
@@ -93,7 +96,7 @@ export default function MaintenancePage() {
     }).format(val || 0);
   };
 
-  const formatDate = (dateStr?: string) => {
+  const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return '--';
     const parsed = new Date(dateStr);
     if (isNaN(parsed.getTime())) return dateStr.slice(0, 10);
@@ -141,6 +144,7 @@ export default function MaintenancePage() {
       id: item.id,
       carId: item.carId,
       date: item.date?.slice(0, 10) || '',
+      completedDate: item.completedDate ? item.completedDate.slice(0, 10) : null,
       content: item.content || '',
       cost: Number(item.cost) || 0,
       status: item.status,
@@ -155,15 +159,23 @@ export default function MaintenancePage() {
       return;
     }
 
+    const payload = {
+      ...formData,
+      completedDate:
+        formData.status === 'Hoàn thành'
+          ? formData.completedDate || new Date().toISOString().slice(0, 10)
+          : null,
+    };
+
     setSubmitting(true);
     try {
       if (editingRecord) {
-        await maintenanceService.updateMaintenance(editingRecord.id, formData);
+        await maintenanceService.updateMaintenance(editingRecord.id, payload);
         showToast(`Cập nhật phiếu bảo trì ${editingRecord.id} thành công!`);
       } else {
-        await maintenanceService.createMaintenance(formData);
+        await maintenanceService.createMaintenance(payload);
         showToast(
-          formData.status === 'Đang bảo trì'
+          payload.status === 'Đang bảo trì'
             ? 'Tạo phiếu bảo trì thành công! Trạng thái xe đã tự động chuyển sang "Bảo trì".'
             : 'Tạo phiếu bảo trì thành công!'
         );
@@ -180,21 +192,24 @@ export default function MaintenancePage() {
   const handleCompleteMaintenance = async (item: Maintenance) => {
     if (
       !window.confirm(
-        `Xác nhận hoàn thành bảo trì cho xe ${item.carName} (${item.carPlate})? Trạng thái xe sẽ tự động chuyển về "Sẵn sàng".`
+        `Xác nhận hoàn thành bảo trì cho xe ${item.carName} (${item.carPlate})? Trạng thái xe sẽ tự động chuyển về "Sẵn sàng" và ngày hoàn thành sẽ tự động điền ngày hôm nay.`
       )
     ) {
       return;
     }
 
+    const todayStr = new Date().toISOString().slice(0, 10);
+
     try {
       await maintenanceService.updateMaintenance(item.id, {
         carId: item.carId,
         date: item.date,
+        completedDate: todayStr,
         content: item.content,
         cost: item.cost,
         status: 'Hoàn thành',
       });
-      showToast(`Đã hoàn thành bảo trì! Xe ${item.carName} hiện đã "Sẵn sàng" cho thuê.`);
+      showToast(`Đã hoàn thành bảo trì! Ngày hoàn thành: ${formatDate(todayStr)}, xe hiện đã "Sẵn sàng".`);
       fetchData();
     } catch (err: any) {
       showToast(err.message || 'Không thể cập nhật trạng thái.', 'error');
@@ -224,7 +239,7 @@ export default function MaintenancePage() {
     <div className="flex-1 min-w-0">
       <Header
         title="Quản Lý Bảo Trì & Sửa Chữa (Maintenance)"
-        description="Ghi nhận nhật ký bảo dưỡng định kỳ, sửa chữa thay thế phụ tùng và kiểm soát chi phí vận hành đội xe"
+        description="Ghi nhận nhật ký bảo dưỡng định kỳ, tự động điền ngày hoàn thành khi xong và kiểm soát chi phí vận hành đội xe"
       />
 
       {/* Toast Notification */}
@@ -336,7 +351,7 @@ export default function MaintenancePage() {
           </div>
         </div>
 
-        {/* Maintenance Table */}
+        {/* Maintenance Table with Completed Date column */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm text-slate-600">
@@ -345,7 +360,8 @@ export default function MaintenancePage() {
                   <th className="px-5 py-3.5">Mã Phiếu</th>
                   <th className="px-5 py-3.5">Xe Bảo Trì</th>
                   <th className="px-5 py-3.5">Biển Số</th>
-                  <th className="px-5 py-3.5">Ngày Thực Hiện</th>
+                  <th className="px-5 py-3.5">Ngày Bắt Đầu</th>
+                  <th className="px-5 py-3.5">Ngày Hoàn Thành</th>
                   <th className="px-5 py-3.5">Nội Dung Chi Tiết</th>
                   <th className="px-5 py-3.5">Chi Phí</th>
                   <th className="px-5 py-3.5">Trạng Thái</th>
@@ -355,7 +371,7 @@ export default function MaintenancePage() {
               <tbody className="divide-y divide-slate-100 font-medium">
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="px-5 py-12 text-center text-slate-400">
+                    <td colSpan={9} className="px-5 py-12 text-center text-slate-400">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                         <span className="text-xs">Đang tải hồ sơ bảo trì...</span>
@@ -364,7 +380,7 @@ export default function MaintenancePage() {
                   </tr>
                 ) : filteredRecords.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-5 py-12 text-center text-slate-400">
+                    <td colSpan={9} className="px-5 py-12 text-center text-slate-400">
                       Không tìm thấy phiếu bảo trì nào phù hợp.
                     </td>
                   </tr>
@@ -389,6 +405,19 @@ export default function MaintenancePage() {
                           {formatDate(item.date)}
                         </div>
                       </td>
+                      <td className="px-5 py-4 text-xs">
+                        {item.completedDate ? (
+                          <div className="flex items-center gap-1.5 font-bold text-emerald-700">
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>{formatDate(item.completedDate)}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-slate-400 font-medium italic">
+                            <Clock className="w-3.5 h-3.5 text-amber-500" />
+                            <span>Đang xử lý...</span>
+                          </div>
+                        )}
+                      </td>
                       <td className="px-5 py-4 text-xs text-slate-700 max-w-xs">
                         <p className="line-clamp-2 leading-relaxed">{item.content}</p>
                       </td>
@@ -412,7 +441,7 @@ export default function MaintenancePage() {
                             <button
                               onClick={() => handleCompleteMaintenance(item)}
                               className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-2xs transition-colors"
-                              title="Đánh dấu hoàn thành"
+                              title="Đánh dấu hoàn thành (tự điền ngày hôm nay)"
                             >
                               <Check className="w-3.5 h-3.5" />
                               <span>Xong</span>
@@ -489,7 +518,7 @@ export default function MaintenancePage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    Ngày Bảo Dưỡng <span className="text-red-500">*</span>
+                    Ngày Bắt Đầu <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="date"
@@ -516,23 +545,42 @@ export default function MaintenancePage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  Trạng Thái Bảo Trì
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      status: e.target.value as 'Đang bảo trì' | 'Hoàn thành',
-                    })
-                  }
-                  className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-blue-500 font-semibold"
-                >
-                  <option value="Đang bảo trì">Đang bảo trì (Khóa xe không cho thuê)</option>
-                  <option value="Hoàn thành">Hoàn thành (Xe trở về Sẵn sàng)</option>
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Trạng Thái Bảo Trì
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        status: e.target.value as 'Đang bảo trì' | 'Hoàn thành',
+                        completedDate:
+                          e.target.value === 'Hoàn thành'
+                            ? formData.completedDate || new Date().toISOString().slice(0, 10)
+                            : null,
+                      })
+                    }
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-blue-500 font-semibold"
+                  >
+                    <option value="Đang bảo trì">Đang bảo trì (Khóa xe)</option>
+                    <option value="Hoàn thành">Hoàn thành (Xe sẵn sàng)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Ngày Hoàn Thành
+                  </label>
+                  <input
+                    type="date"
+                    disabled={formData.status !== 'Hoàn thành'}
+                    value={formData.completedDate || ''}
+                    onChange={(e) => setFormData({ ...formData, completedDate: e.target.value })}
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-blue-500 font-semibold disabled:bg-slate-100 disabled:text-slate-400"
+                  />
+                </div>
               </div>
 
               <div>

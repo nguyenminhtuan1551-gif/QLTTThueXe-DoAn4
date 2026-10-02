@@ -65,7 +65,7 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 const create = asyncHandler(async (req, res) => {
-  const { id, carId, date, content, cost, status } = req.body;
+  const { id, carId, date, completedDate, content, cost, status } = req.body;
 
   if (!carId || !date || !content || !cost || !status) {
     throw createError('Thiếu thông tin bảo trì.', 400);
@@ -75,6 +75,7 @@ const create = asyncHandler(async (req, res) => {
     id: id || generateId('BT'),
     carId,
     date,
+    completedDate,
     content,
     cost,
     status,
@@ -96,12 +97,18 @@ const update = asyncHandler(async (req, res) => {
     throw createError('Không tìm thấy hồ sơ bảo trì cần cập nhật.', 404);
   }
 
+  const newStatus = req.body.status ?? existingRecord.status;
+  const newCompletedDate = req.body.completedDate !== undefined
+    ? req.body.completedDate
+    : (newStatus === 'Hoàn thành' ? (existingRecord.completedDate || new Date().toISOString().slice(0, 10)) : null);
+
   const updatedRecord = await MaintenanceModel.update(req.params.id, {
     carId: req.body.carId ?? existingRecord.carId,
     date: req.body.date ?? existingRecord.date,
+    completedDate: newCompletedDate,
     content: req.body.content ?? existingRecord.content,
     cost: req.body.cost ?? existingRecord.cost,
-    status: req.body.status ?? existingRecord.status,
+    status: newStatus,
   });
 
   await syncCarStatus(updatedRecord.carId, updatedRecord.status);

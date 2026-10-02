@@ -9,6 +9,7 @@ import {
   Modal,
   TextInput,
   StatusBar,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../context/AuthContext';
@@ -48,14 +49,28 @@ export const ProfileScreen: React.FC = () => {
   }, [user]);
 
   const handleLogout = () => {
+    const doLogout = async () => {
+      try {
+        await logout();
+      } catch (err) {
+        console.warn('Lỗi khi đăng xuất:', err);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Bạn có chắc chắn muốn đăng xuất khỏi ứng dụng?');
+      if (confirmed) {
+        doLogout();
+      }
+      return;
+    }
+
     Alert.alert('Đăng xuất tài khoản', 'Bạn có chắc chắn muốn đăng xuất khỏi ứng dụng?', [
       { text: 'Hủy', style: 'cancel' },
       {
         text: 'Đăng xuất',
         style: 'destructive',
-        onPress: async () => {
-          await logout();
-        },
+        onPress: doLogout,
       },
     ]);
   };
@@ -115,7 +130,11 @@ export const ProfileScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
-      <Header title="Tài Khoản & Hồ Sơ" subtitle="Quản lý thông tin giấy tờ khách hàng" />
+      <Header
+        title="Tài Khoản & Hồ Sơ"
+        subtitle="Quản lý thông tin giấy tờ khách hàng"
+        onRefresh={refreshProfile}
+      />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* User Card */}

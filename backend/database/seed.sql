@@ -160,14 +160,14 @@ INSERT INTO PhiPhat (MaPP, MaTraXe, LoaiPhiPhat, SoTienPhat, GhiChu) VALUES
   ('PP005', 'TRX005', 'Phạt hỏng hóc', 300000, 'Bồi hoàn bộ thảm lót khoang hành lý');
 
 -- 9. BẢNG BẢO TRÌ (BAOTRI)
-INSERT INTO BaoTri (MaBaoTri, MaXe, NgayBaoTri, NoiDung, ChiPhi, TrangThai) VALUES
-  ('BT001', 'XE005', '2026-04-10 09:00:00', 'Thay má phanh trước sau, láng đĩa phanh', 1850000, 'Đang bảo trì'),
-  ('BT002', 'XE009', '2026-04-12 10:30:00', 'Vệ sinh giàn lạnh và nạp ga điều hòa sau', 2200000, 'Đang bảo trì'),
-  ('BT003', 'XE013', '2026-04-14 14:00:00', 'Thay 2 quả lốp Michelin Primacy 4 trước', 4800000, 'Đang bảo trì'),
-  ('BT004', 'XE017', '2026-04-15 08:30:00', 'Kiểm tra phần mềm quản lý pin và cân chỉnh lái', 950000, 'Đang bảo trì'),
-  ('BT005', 'XE001', '2026-01-08 15:00:00', 'Bảo dưỡng cấp 4 vạn km tiêu chuẩn hãng', 3200000, 'Hoàn thành'),
-  ('BT006', 'XE002', '2026-01-12 11:00:00', 'Thay dầu động cơ, lọc dầu, lọc gió', 850000, 'Hoàn thành'),
-  ('BT007', 'XE004', '2026-01-15 09:30:00', 'Sơn dặm phục hồi cản sau', 600000, 'Hoàn thành');
+INSERT INTO BaoTri (MaBaoTri, MaXe, NgayBaoTri, NgayHoanThanh, NoiDung, ChiPhi, TrangThai) VALUES
+  ('BT001', 'XE005', '2026-04-10 09:00:00', NULL, 'Thay má phanh trước sau, láng đĩa phanh', 1850000, 'Đang bảo trì'),
+  ('BT002', 'XE009', '2026-04-12 10:30:00', NULL, 'Vệ sinh giàn lạnh và nạp ga điều hòa sau', 2200000, 'Đang bảo trì'),
+  ('BT003', 'XE013', '2026-04-14 14:00:00', NULL, 'Thay 2 quả lốp Michelin Primacy 4 trước', 4800000, 'Đang bảo trì'),
+  ('BT004', 'XE017', '2026-04-15 08:30:00', NULL, 'Kiểm tra phần mềm quản lý pin và cân chỉnh lái', 950000, 'Đang bảo trì'),
+  ('BT005', 'XE001', '2026-01-08 15:00:00', '2026-01-09', 'Bảo dưỡng cấp 4 vạn km tiêu chuẩn hãng', 3200000, 'Hoàn thành'),
+  ('BT006', 'XE002', '2026-01-12 11:00:00', '2026-01-12', 'Thay dầu động cơ, lọc dầu, lọc gió', 850000, 'Hoàn thành'),
+  ('BT007', 'XE004', '2026-01-15 09:30:00', '2026-01-16', 'Sơn dặm phục hồi cản sau', 600000, 'Hoàn thành');
 
 -- 10. BẢNG HỘP THƯ LIÊN HỆ (LIENHE)
 INSERT INTO LienHe (HoTen, SDT, Email, NoiDung, TrangThai) VALUES

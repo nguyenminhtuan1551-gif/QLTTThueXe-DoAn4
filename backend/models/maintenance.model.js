@@ -7,6 +7,7 @@ const maintenanceSelect = `
     xe.TenXe AS carName,
     xe.BienSo AS carPlate,
     bt.NgayBaoTri AS date,
+    bt.NgayHoanThanh AS completedDate,
     bt.NoiDung AS content,
     bt.ChiPhi AS cost,
     bt.TrangThai AS status
@@ -63,21 +64,27 @@ async function findByCarId(carId) {
 }
 
 async function create(payload) {
+  const resolvedCompletedDate = payload.completedDate !== undefined
+    ? payload.completedDate
+    : (payload.status === 'Hoàn thành' ? new Date().toISOString().slice(0, 10) : null);
+
   await query(
     `
       INSERT INTO BaoTri (
         MaBaoTri,
         MaXe,
         NgayBaoTri,
+        NgayHoanThanh,
         NoiDung,
         ChiPhi,
         TrangThai
-      ) VALUES (?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
     `,
     [
       payload.id,
       payload.carId,
       payload.date,
+      resolvedCompletedDate,
       payload.content,
       payload.cost,
       payload.status,
@@ -88,12 +95,17 @@ async function create(payload) {
 }
 
 async function update(id, payload) {
+  const resolvedCompletedDate = payload.completedDate !== undefined
+    ? payload.completedDate
+    : (payload.status === 'Hoàn thành' ? new Date().toISOString().slice(0, 10) : null);
+
   await query(
     `
       UPDATE BaoTri
       SET
         MaXe = ?,
         NgayBaoTri = ?,
+        NgayHoanThanh = ?,
         NoiDung = ?,
         ChiPhi = ?,
         TrangThai = ?,
@@ -103,6 +115,7 @@ async function update(id, payload) {
     [
       payload.carId,
       payload.date,
+      resolvedCompletedDate,
       payload.content,
       payload.cost,
       payload.status,

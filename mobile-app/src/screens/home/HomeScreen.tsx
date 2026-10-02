@@ -139,15 +139,25 @@ export const HomeScreen: React.FC = () => {
           <Text style={styles.userName}>{user?.fullName || 'Quý khách hàng'}</Text>
           <Text style={styles.userLocation}>📍 Khu vực Hà Nội</Text>
         </View>
-        <TouchableOpacity
-          style={styles.avatarBtn}
-          activeOpacity={0.8}
-          onPress={() => navigation.navigate('Main', { screen: 'ProfileTab' } as any)}
-        >
-          <Text style={styles.avatarText}>
-            {user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
-          </Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <TouchableOpacity
+            style={styles.refreshTopBtn}
+            activeOpacity={0.7}
+            onPress={onRefresh}
+            accessibilityLabel="Tải lại trang"
+          >
+            <Text style={{ fontSize: 16 }}>🔄</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.avatarBtn}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('Main', { screen: 'ProfileTab' } as any)}
+          >
+            <Text style={styles.avatarText}>
+              {user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -385,6 +395,16 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600',
     marginTop: 2,
+  },
+  refreshTopBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
   },
   avatarBtn: {
     width: 44,

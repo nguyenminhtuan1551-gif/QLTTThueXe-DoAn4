@@ -25,20 +25,20 @@ export const CarDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [car, setCar] = useState<Car | null>(initialCar || null);
   const [loading, setLoading] = useState(!initialCar);
 
-  useEffect(() => {
-    const fetchCarDetail = async () => {
-      try {
-        const response = await carApi.getCarById(carId);
-        if (response.success && response.data) {
-          setCar(response.data);
-        }
-      } catch (error: any) {
-        Alert.alert('Lỗi', error.message || 'Không thể tải chi tiết thông tin xe.');
-      } finally {
-        setLoading(false);
+  const fetchCarDetail = async () => {
+    try {
+      const response = await carApi.getCarById(carId);
+      if (response.success && response.data) {
+        setCar(response.data);
       }
-    };
+    } catch (error: any) {
+      Alert.alert('Lỗi', error.message || 'Không thể tải chi tiết thông tin xe.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchCarDetail();
   }, [carId]);
 
@@ -107,6 +107,7 @@ export const CarDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         title={car.name}
         subtitle={`${car.brand} • ${car.year}`}
         onBack={() => navigation.goBack()}
+        onRefresh={fetchCarDetail}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

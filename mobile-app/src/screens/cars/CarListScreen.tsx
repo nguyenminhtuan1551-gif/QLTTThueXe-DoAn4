@@ -223,7 +223,11 @@ export const CarListScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-      <Header title="Danh Mục Xe Cho Thuê" subtitle="Có tài xế phục vụ tại Hà Nội" />
+      <Header
+        title="Danh Mục Xe Cho Thuê"
+        subtitle="Có tài xế phục vụ tại Hà Nội"
+        onRefresh={onRefresh}
+      />
 
       {/* Top Search & Filter Bar */}
       <View style={styles.filterSection}>

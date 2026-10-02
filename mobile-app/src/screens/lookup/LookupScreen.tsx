@@ -81,6 +81,13 @@ export const LookupScreen: React.FC = () => {
       <Header
         title="Tra Cứu Hợp Đồng"
         subtitle="Dành cho khách hàng tra cứu nhanh không cần đăng nhập"
+        onRefresh={() => {
+          if (contractId || phone || cccd) {
+            handleLookup();
+          } else {
+            handleReset();
+          }
+        }}
       />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>

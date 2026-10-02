@@ -64,6 +64,7 @@ export interface Maintenance {
   carName?: string;
   carPlate?: string;
   date: string;
+  completedDate?: string | null;
   content: string;
   cost: number;
   status: 'Đang bảo trì' | 'Hoàn thành';

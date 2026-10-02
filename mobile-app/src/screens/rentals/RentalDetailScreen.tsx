@@ -27,21 +27,21 @@ export const RentalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [lookupData, setLookupData] = useState<LookupResponseData | null>(initialLookupData || null);
   const [loading, setLoading] = useState(!initialContract && !initialLookupData);
 
-  useEffect(() => {
-    const fetchDetail = async () => {
-      try {
-        const response = await contractApi.lookupContract({ contractId });
-        if (response.success && response.data) {
-          setLookupData(response.data);
-          setContract(response.data.contract);
-        }
-      } catch (error: any) {
-        Alert.alert('Lỗi', error.message || 'Không thể tải chi tiết đơn thuê.');
-      } finally {
-        setLoading(false);
+  const fetchDetail = async () => {
+    try {
+      const response = await contractApi.lookupContract({ contractId });
+      if (response.success && response.data) {
+        setLookupData(response.data);
+        setContract(response.data.contract);
       }
-    };
+    } catch (error: any) {
+      Alert.alert('Lỗi', error.message || 'Không thể tải chi tiết đơn thuê.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchDetail();
   }, [contractId]);
 
@@ -86,6 +86,7 @@ export const RentalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         title={`Hợp Đồng ${contract.id}`}
         subtitle={contract.status}
         onBack={() => navigation.goBack()}
+        onRefresh={fetchDetail}
       />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>

@@ -102,11 +102,11 @@ async function validatePickupPoint(pickupPoint) {
   const verification = await verifyPickupPointInHanoi(pickupPoint.trim());
 
   if (verification.status === 'outside') {
-    throw createError('Hệ thống chỉ hỗ trợ điểm đón xe trong phạm vi Hà Nội.', 400);
+    throw createError('Địa chỉ nhận xe quá xa hoặc nằm ngoài phạm vi phục vụ tại Hà Nội. Hệ thống hiện chỉ hỗ trợ giao nhận xe trong khu vực các quận huyện thuộc TP. Hà Nội.', 400);
   }
 
   if (verification.status === 'not_found' || verification.status === 'unverified') {
-    throw createError('Không thể xác minh điểm đón. Vui lòng nhập địa chỉ chi tiết trong phạm vi Hà Nội.', 400);
+    throw createError('Địa chỉ nhận xe quá xa hoặc không thuộc khu vực Hà Nội. Vui lòng chọn điểm đón trong phạm vi Hà Nội (ví dụ: Quận Cầu Giấy, Nam Từ Liêm, Hoàn Kiếm, Sân bay Nội Bài...).', 400);
   }
 
   return pickupPoint.trim();

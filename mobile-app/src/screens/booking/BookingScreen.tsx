@@ -265,7 +265,12 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
         throw new Error(response.message || 'Không thể gửi yêu cầu đặt xe.');
       }
     } catch (err: any) {
-      Alert.alert('Đặt xe thất bại', err.message || 'Đã có lỗi xảy ra khi tạo yêu cầu thuê xe.');
+      const errMsg = err.message || 'Đã có lỗi xảy ra khi tạo yêu cầu thuê xe.';
+      if (Platform.OS === 'web') {
+        window.alert(`⚠️ Đặt xe không thành công:\n\n${errMsg}`);
+      } else {
+        Alert.alert('Đặt xe không thành công', errMsg);
+      }
     } finally {
       setSubmitting(false);
     }
