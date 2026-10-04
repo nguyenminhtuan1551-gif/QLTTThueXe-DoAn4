@@ -100,7 +100,7 @@ async function findAll(filters = {}) {
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-  const rows = await query(`${contractSelect} ${whereClause} ORDER BY hd.NgayThue DESC`, params);
+  const rows = await query(`${contractSelect} ${whereClause} ORDER BY hd.CreatedAt DESC, hd.MaHD DESC`, params);
   return enrichContracts(rows);
 }
 
@@ -145,7 +145,7 @@ async function findByLookup({ contractId, cccd, phone }) {
     `
       ${contractSelect}
       WHERE ${conditions.join(' OR ')}
-      ORDER BY hd.NgayThue DESC
+      ORDER BY hd.CreatedAt DESC, hd.MaHD DESC
       LIMIT 1
     `,
     params,
@@ -160,7 +160,7 @@ async function findByCustomerId(customerId) {
     `
       ${contractSelect}
       WHERE hd.MaKH = ?
-      ORDER BY hd.NgayThue DESC
+      ORDER BY hd.CreatedAt DESC, hd.MaHD DESC
     `,
     [customerId],
   );

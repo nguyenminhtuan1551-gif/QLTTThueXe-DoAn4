@@ -136,7 +136,7 @@ export default function ReturnsPage() {
       if (targetContract) {
         const s = new Date(targetContract.startDate);
         const e = new Date(formData.actualReturnDate);
-        const days = Math.max(1, Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)));
+        const days = Math.max(1, Math.floor((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1);
         const daily =
           Number(targetContract.pricePerDay || 0) ||
           Math.round(Number(targetContract.totalAmount || 0) / Math.max(1, days));

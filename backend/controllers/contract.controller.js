@@ -12,7 +12,7 @@ const {
 const { sendSuccess } = require('../common/response');
 const { generateId } = require('../common/generateId');
 const { hashPassword } = require('../common/password');
-const { verifyPickupPointInHanoi } = require('../common/pickupPointValidator');
+const { verifyPickupPoint } = require('../common/pickupPointValidator');
 const asyncHandler = require('../middlewares/asyncHandler');
 const ContractModel = require('../models/contract.model');
 const CustomerModel = require('../models/customer.model');
@@ -94,15 +94,22 @@ async function syncCarStatus(carId, status) {
   });
 }
 
-async function validatePickupPoint(pickupPoint) {
+async function validatePickupPoint(pickupPoint, car = null) {
   if (!pickupPoint || !pickupPoint.trim()) {
     throw createError('Vui lòng nhập điểm đón xe.', 400);
   }
 
-  const verification = await verifyPickupPointInHanoi(pickupPoint.trim());
+  const verification = await verifyPickupPoint(pickupPoint.trim(), car?.location);
 
-  if (verification.status === 'outside') {
-    throw createError('Địa chỉ nhận xe quá xa hoặc nằm ngoài phạm vi phục vụ. Hệ thống hiện chỉ hỗ trợ các điểm đón trên lãnh thổ Việt Nam.', 400);
+  if (verification.status === 'mismatch') {
+    throw createError(
+      `Xe này đang ở bãi đỗ ${verification.carLocation}. Điểm đón bạn nhập (${verification.pickupProvince || pickupPoint}) nằm ở tỉnh/thành khác và quá xa. Vui lòng chọn điểm đón trong khu vực ${verification.carProvince}.`,
+      400,
+    );
+  }
+
+  if (verification.status === 'outside_country') {
+    throw createError('Địa chỉ nhận xe nằm ngoài phạm vi phục vụ. Hệ thống hiện chỉ hỗ trợ các điểm đón trên lãnh thổ Việt Nam.', 400);
   }
 
   if (verification.status === 'empty' || verification.status === 'not_found') {
@@ -315,7 +322,7 @@ const create = asyncHandler(async (req, res) => {
   }
 
   const car = await validateRentalRequest({ carId, startDate, expectedReturnDate });
-  const resolvedPickupPoint = await validatePickupPoint(pickupPoint);
+  const resolvedPickupPoint = await validatePickupPoint(pickupPoint, car);
   const pickupImages = extractPickupImages(req.files);
 
   const resolvedCustomerId = await resolveCustomerId(req, {
@@ -378,7 +385,8 @@ const update = asyncHandler(async (req, res) => {
   };
 
   if (req.body.pickupPoint !== undefined || nextPayload.pickupPoint) {
-    nextPayload.pickupPoint = await validatePickupPoint(nextPayload.pickupPoint);
+    const targetCar = await CarModel.findById(nextPayload.carId);
+    nextPayload.pickupPoint = await validatePickupPoint(nextPayload.pickupPoint, targetCar);
   }
 
   if (![CONTRACT_STATUS_COMPLETED, CONTRACT_STATUS_CANCELLED].includes(nextPayload.status)) {

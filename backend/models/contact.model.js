@@ -12,7 +12,7 @@ async function findAll() {
         TrangThai AS status,
         CreatedAt AS createdAt
       FROM LienHe
-      ORDER BY CreatedAt DESC
+      ORDER BY CreatedAt DESC, MaLH DESC
     `,
   );
 }

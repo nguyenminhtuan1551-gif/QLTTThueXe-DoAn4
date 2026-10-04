@@ -40,10 +40,14 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
   const defaultEnd = new Date(today);
   defaultEnd.setDate(defaultEnd.getDate() + 2);
 
+  const cleanCarLocation = car.location
+    ? car.location.replace(/\[Khu vực:\s*/i, '').replace(/\]/, '').trim()
+    : 'Khu vực Hà Nội';
+
   // Form State
   const [startDate, setStartDate] = useState(formatDateToYMD(today));
   const [expectedReturnDate, setExpectedReturnDate] = useState(formatDateToYMD(defaultEnd));
-  const [pickupPoint, setPickupPoint] = useState('Số 10 Phạm Hùng, Cầu Giấy, Hà Nội');
+  const [pickupPoint, setPickupPoint] = useState(cleanCarLocation);
   const [notes, setNotes] = useState('');
 
   // Customer Profile Information Form
@@ -189,7 +193,30 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
     }
 
     if (!pickupPoint.trim()) {
-      errs.pickupPoint = 'Vui lòng nhập điểm đón / nhận xe trong khu vực Hà Nội';
+      errs.pickupPoint = 'Vui lòng nhập điểm đón / nhận xe';
+    } else {
+      const normCar = cleanCarLocation.toLowerCase();
+      const normPickup = pickupPoint.trim().toLowerCase();
+
+      // Kiểm tra ngăn chặn đặt điểm đón ở tỉnh thành khác quá xa
+      const provinces = [
+        { name: 'Hà Nội', kw: ['hà nội', 'ha noi', 'nội bài', 'cầu giấy', 'nam từ liêm', 'đống đa', 'ba đình', 'hoàn kiếm', 'tây hồ', 'thanh xuân', 'hà đông', 'long biên'] },
+        { name: 'TP. Hồ Chí Minh', kw: ['hồ chí minh', 'ho chi minh', 'hcm', 'sài gòn', 'sai gon', 'thủ đức', 'tân bình', 'quận 1', 'quận 3', 'quận 7', 'tân sơn nhất'] },
+        { name: 'Đà Nẵng', kw: ['đà nẵng', 'da nang', 'hải châu', 'sơn trà', 'ngũ hành sơn'] },
+        { name: 'Hải Phòng', kw: ['hải phòng', 'hai phong', 'hồng bàng', 'ngô quyền', 'lê chân'] },
+        { name: 'Cần Thơ', kw: ['cần thơ', 'can tho', 'ninh kiều'] },
+        { name: 'Khánh Hòa', kw: ['khánh hòa', 'khanh hoa', 'nha trang', 'cam ranh'] },
+        { name: 'Lâm Đồng', kw: ['lâm đồng', 'lam dong', 'đà lạt', 'da lat'] },
+        { name: 'Bà Rịa - Vũng Tàu', kw: ['vũng tàu', 'vung tau', 'bà rịa', 'ba ria'] },
+        { name: 'Quảng Ninh', kw: ['quảng ninh', 'quang ninh', 'hạ long', 'ha long'] },
+      ];
+
+      const carProv = provinces.find((p) => p.kw.some((k) => normCar.includes(k)));
+      const pickupProv = provinces.find((p) => p.kw.some((k) => normPickup.includes(k)));
+
+      if (carProv && pickupProv && carProv.name !== pickupProv.name) {
+        errs.pickupPoint = `Xe này đỗ tại ${cleanCarLocation}. Điểm đón bạn nhập (${pickupProv.name}) nằm ở tỉnh khác và quá xa. Vui lòng chọn điểm đón trong khu vực ${carProv.name}.`;
+      }
     }
 
     if (!fullName.trim()) errs.fullName = 'Vui lòng nhập họ và tên khách hàng';
@@ -372,8 +399,8 @@ export const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
 
           <Input
-            label="Địa điểm nhận / giao xe tại Hà Nội *"
-            placeholder="Ví dụ: Tòa Keangnam, Mễ Trì, Nam Từ Liêm, Hà Nội"
+            label={`Điểm đón / nhận xe (Xe tại: ${cleanCarLocation}) *`}
+            placeholder={`Điểm đón trong khu vực ${cleanCarLocation}...`}
             value={pickupPoint}
             onChangeText={(v) => {
               setPickupPoint(v);

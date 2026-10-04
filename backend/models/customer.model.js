@@ -28,7 +28,7 @@ async function findAll(filters = {}) {
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-  return query(`${customerSelect} ${whereClause} ORDER BY kh.CreatedAt DESC`, params);
+  return query(`${customerSelect} ${whereClause} ORDER BY kh.CreatedAt DESC, kh.MaKH DESC`, params);
 }
 
 async function findById(id) {

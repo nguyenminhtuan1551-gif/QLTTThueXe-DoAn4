@@ -102,7 +102,9 @@ export const HomeScreen: React.FC = () => {
             />
           </View>
           <View style={styles.featuredTag}>
-            <Text style={styles.featuredTagText}>⭐ Nổi bật</Text>
+            <Text style={styles.featuredTagText}>
+              ⭐ {(item.rentalCount || item.completedContracts) ? `${item.rentalCount || item.completedContracts} lượt thuê` : 'Nổi bật'}
+            </Text>
           </View>
         </View>
         <View style={styles.featuredContent}>

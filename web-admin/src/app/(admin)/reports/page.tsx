@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   Calendar,
   DollarSign,
@@ -13,6 +13,7 @@ import {
   Car as CarIcon,
   CheckCircle,
   AlertCircle,
+  Search,
 } from 'lucide-react';
 import { Header } from '../../../components/Header';
 import { Pagination } from '../../../components/Pagination';
@@ -26,6 +27,7 @@ export default function ReportsPage() {
 
   const [fromDate, setFromDate] = useState(startOfYear);
   const [toDate, setToDate] = useState(todayStr);
+  const [carSearch, setCarSearch] = useState('');
   const [report, setReport] = useState<RevenueReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -86,8 +88,43 @@ export default function ReportsPage() {
     window.print();
   };
 
+  // Filter items by car name / plate search
+  const filteredItems = useMemo(() => {
+    if (!report?.items) return [];
+    if (!carSearch.trim()) return report.items;
+    const q = carSearch.toLowerCase().trim();
+    return report.items.filter(
+      (item) =>
+        item.carName.toLowerCase().includes(q) ||
+        item.carPlate.toLowerCase().includes(q) ||
+        item.carId.toLowerCase().includes(q)
+    );
+  }, [report?.items, carSearch]);
+
+  // Recalculate summary stats based on current search filter
+  const summary = useMemo(() => {
+    return filteredItems.reduce(
+      (acc, item) => ({
+        cars: acc.cars + 1,
+        rentals: acc.rentals + item.rentals,
+        revenue: acc.revenue + item.revenue,
+        maintenanceCost: acc.maintenanceCost + item.maintenanceCost,
+        penaltyFee: acc.penaltyFee + item.penaltyFee,
+        totalAmount: acc.totalAmount + item.totalAmount,
+      }),
+      {
+        cars: 0,
+        rentals: 0,
+        revenue: 0,
+        maintenanceCost: 0,
+        penaltyFee: 0,
+        totalAmount: 0,
+      }
+    );
+  }, [filteredItems]);
+
   const handleExportCSV = () => {
-    if (!report || !report.items.length) {
+    if (!filteredItems.length) {
       showToast('Không có dữ liệu để xuất file.', 'error');
       return;
     }
@@ -103,7 +140,7 @@ export default function ReportsPage() {
       'Lợi Nhuận Thuần (VND)',
     ];
 
-    const rows = report.items.map((item) => [
+    const rows = filteredItems.map((item) => [
       item.carId,
       `"${item.carName}"`,
       item.carPlate,
@@ -117,13 +154,13 @@ export default function ReportsPage() {
     // Summary row
     rows.push([
       'TỔNG CỘNG',
-      'TOÀN TRUNG TÂM',
+      carSearch ? `LỌC: "${carSearch}"` : 'TOÀN TRUNG TÂM',
       '',
-      report.summary.rentals,
-      report.summary.revenue,
-      report.summary.maintenanceCost,
-      report.summary.penaltyFee,
-      report.summary.totalAmount,
+      summary.rentals,
+      summary.revenue,
+      summary.maintenanceCost,
+      summary.penaltyFee,
+      summary.totalAmount,
     ]);
 
     const csvContent =
@@ -140,8 +177,7 @@ export default function ReportsPage() {
     showToast('Xuất file thống kê Excel / CSV thành công!');
   };
 
-  const allItems = report?.items || [];
-  const paginatedItems = allItems.slice(
+  const paginatedItems = filteredItems.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
@@ -172,12 +208,13 @@ export default function ReportsPage() {
       )}
 
       <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-        {/* Date Filter & Export Bar */}
+        {/* Date Filter, Car Name Filter & Export Bar */}
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4 print:hidden">
           <div className="flex flex-wrap items-center gap-3">
+            {/* Date range picker */}
             <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-              <Calendar className="w-4 h-4 text-blue-600" />
-              <span>Khoảng thời gian:</span>
+              <Calendar className="w-4 h-4 text-blue-600 shrink-0" />
+              <span>Thời gian:</span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -193,6 +230,21 @@ export default function ReportsPage() {
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
                 className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            {/* Filter by Car Name or Plate */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Tìm tên xe, biển số..."
+                value={carSearch}
+                onChange={(e) => {
+                  setCarSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 w-48 sm:w-56 bg-slate-50"
               />
             </div>
 
@@ -228,10 +280,10 @@ export default function ReportsPage() {
         <div className="hidden print:block text-center mb-6">
           <h1 className="text-2xl font-black text-slate-900 uppercase">BÁO CÁO DOANH THU & HIỆU QUẢ HOẠT ĐỘNG</h1>
           <p className="text-sm text-slate-600 mt-1">Từ ngày {formatDate(fromDate)} đến ngày {formatDate(toDate)}</p>
-          <p className="text-xs text-slate-400 mt-0.5">Trung Tâm Cho Thuê Xe Tự Lái Car Rental Hà Nội</p>
+          <p className="text-xs text-slate-400 mt-0.5">Trung Tâm Cho Thuê Xe Car Rental</p>
         </div>
 
-        {/* KPI Summaries Cards */}
+        {/* KPI Summaries Cards (Dynamically calculated based on car search filter) */}
         {report && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
@@ -240,8 +292,8 @@ export default function ReportsPage() {
               </div>
               <div>
                 <p className="text-xs text-slate-500 font-medium">Doanh Thu Tiền Thuê</p>
-                <h3 className="text-xl font-black text-blue-700 mt-0.5">{formatCurrency(report.summary.revenue)}</h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">{report.summary.rentals} lượt thuê xe</p>
+                <h3 className="text-xl font-black text-blue-700 mt-0.5">{formatCurrency(summary.revenue)}</h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">{summary.rentals} lượt thuê xe</p>
               </div>
             </div>
 
@@ -251,7 +303,7 @@ export default function ReportsPage() {
               </div>
               <div>
                 <p className="text-xs text-slate-500 font-medium">Chi Phí Bảo Trì Xe</p>
-                <h3 className="text-xl font-black text-amber-700 mt-0.5">{formatCurrency(report.summary.maintenanceCost)}</h3>
+                <h3 className="text-xl font-black text-amber-700 mt-0.5">{formatCurrency(summary.maintenanceCost)}</h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">Bảo dưỡng & sửa chữa</p>
               </div>
             </div>
@@ -262,7 +314,7 @@ export default function ReportsPage() {
               </div>
               <div>
                 <p className="text-xs text-slate-500 font-medium">Thu Phí Phạt Vi Phạm</p>
-                <h3 className="text-xl font-black text-purple-700 mt-0.5">{formatCurrency(report.summary.penaltyFee)}</h3>
+                <h3 className="text-xl font-black text-purple-700 mt-0.5">{formatCurrency(summary.penaltyFee)}</h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">Quá hạn & hỏng hóc</p>
               </div>
             </div>
@@ -273,7 +325,7 @@ export default function ReportsPage() {
               </div>
               <div>
                 <p className="text-xs text-slate-500 font-medium">Lợi Nhuận Ròng (Thuần)</p>
-                <h3 className="text-xl font-black text-emerald-700 mt-0.5">{formatCurrency(report.summary.totalAmount)}</h3>
+                <h3 className="text-xl font-black text-emerald-700 mt-0.5">{formatCurrency(summary.totalAmount)}</h3>
                 <p className="text-[11px] text-emerald-600 font-bold mt-0.5">Doanh thu + Phạt - Chi phí</p>
               </div>
             </div>
@@ -282,9 +334,9 @@ export default function ReportsPage() {
 
         {/* Detailed Table */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-sm font-bold text-slate-900">
-              Chi Tiết Doanh Thu & Lợi Nhuận Từng Xe ({report?.items.length || 0} xe)
+              Chi Tiết Doanh Thu & Lợi Nhuận Từng Xe ({filteredItems.length} xe{carSearch ? ` tìm theo "${carSearch}"` : ''})
             </h3>
             <span className="text-xs text-slate-500 font-medium">
               Từ {formatDate(fromDate)} đến {formatDate(toDate)}
@@ -315,10 +367,10 @@ export default function ReportsPage() {
                       </div>
                     </td>
                   </tr>
-                ) : !report || report.items.length === 0 ? (
+                ) : !report || filteredItems.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-5 py-12 text-center text-slate-400">
-                      Không có phát sinh doanh thu nào trong khoảng thời gian này.
+                      {carSearch ? `Không tìm thấy xe nào khớp với "${carSearch}".` : 'Không có phát sinh doanh thu nào trong khoảng thời gian này.'}
                     </td>
                   </tr>
                 ) : (
@@ -357,22 +409,22 @@ export default function ReportsPage() {
                     {/* Summary Row */}
                     <tr className="bg-slate-100/90 font-bold border-t-2 border-slate-300 text-xs">
                       <td colSpan={3} className="px-5 py-4 text-slate-900 uppercase whitespace-nowrap">
-                        TỔNG HỢP TOÀN TRUNG TÂM ({report.summary.cars} xe)
+                        {carSearch ? `TỔNG CỘNG THEO BỘ LỌC (${summary.cars} xe)` : `TỔNG HỢP TOÀN TRUNG TÂM (${summary.cars} xe)`}
                       </td>
                       <td className="px-5 py-4 text-center font-extrabold text-blue-700 whitespace-nowrap">
-                        {report.summary.rentals}
+                        {summary.rentals}
                       </td>
                       <td className="px-5 py-4 text-right font-extrabold text-slate-900 whitespace-nowrap">
-                        {formatCurrency(report.summary.revenue)}
+                        {formatCurrency(summary.revenue)}
                       </td>
                       <td className="px-5 py-4 text-right font-extrabold text-amber-700 whitespace-nowrap">
-                        - {formatCurrency(report.summary.maintenanceCost)}
+                        - {formatCurrency(summary.maintenanceCost)}
                       </td>
                       <td className="px-5 py-4 text-right font-extrabold text-purple-700 whitespace-nowrap">
-                        + {formatCurrency(report.summary.penaltyFee)}
+                        + {formatCurrency(summary.penaltyFee)}
                       </td>
                       <td className="px-5 py-4 text-right font-black text-emerald-700 text-base whitespace-nowrap">
-                        {formatCurrency(report.summary.totalAmount)}
+                        {formatCurrency(summary.totalAmount)}
                       </td>
                     </tr>
                   </>
@@ -382,11 +434,11 @@ export default function ReportsPage() {
           </div>
 
           {/* Pagination */}
-          {!loading && allItems.length > 0 && (
+          {!loading && filteredItems.length > 0 && (
             <div className="print:hidden">
               <Pagination
                 currentPage={currentPage}
-                totalItems={allItems.length}
+                totalItems={filteredItems.length}
                 pageSize={pageSize}
                 onPageChange={setCurrentPage}
                 onPageSizeChange={setPageSize}

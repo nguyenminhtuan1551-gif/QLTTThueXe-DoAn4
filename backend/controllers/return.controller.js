@@ -19,7 +19,7 @@ function createError(message, statusCode = 400) {
 function calculateActualDays(startDate, actualReturnDate) {
   const start = new Date(startDate);
   const end = new Date(actualReturnDate);
-  const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+  const diff = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   return diff > 0 ? diff : 1;
 }
 

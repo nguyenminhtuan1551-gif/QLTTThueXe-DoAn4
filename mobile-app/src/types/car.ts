@@ -42,6 +42,7 @@ export interface Car {
   // Thống kê nổi bật
   completedContracts?: number;
   completedRevenue?: number;
+  rentalCount?: number;
 }
 
 export interface CarFilterParams {

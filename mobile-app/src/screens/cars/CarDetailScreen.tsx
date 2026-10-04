@@ -251,8 +251,8 @@ export const CarDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           <Text style={styles.sectionTitle}>Mô Tả & Trang Bị</Text>
           <View style={styles.notesContainer}>
             <Text style={styles.notesBody}>
-              {car.notes ||
-                'Xe gia đình giữ gìn sạch sẽ, nội thất da cao cấp, trang bị camera lùi, cảm biến va chạm, màn hình Android kết nối Apple CarPlay & Android Auto, lốp dự phòng và bộ dụng cụ cứu hộ tiêu chuẩn.'}
+              {(car.notes ? car.notes.replace(/\[Khu vực:\s*[^\]]+\]\s*/i, '').trim() : '') ||
+                'Xe giữ gìn sạch sẽ, nội thất da cao cấp, trang bị camera lùi, cảm biến va chạm, màn hình kết nối Apple CarPlay & Android Auto, lốp dự phòng và bộ dụng cụ cứu hộ tiêu chuẩn.'}
             </Text>
             <View style={styles.amenitiesWrap}>
               <View style={styles.amenityChip}>

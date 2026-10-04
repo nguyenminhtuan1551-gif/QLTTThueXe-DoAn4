@@ -258,7 +258,7 @@ async function findAll(filters = {}) {
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-  const cars = await query(`${carSelect} ${whereClause} ORDER BY xe.CreatedAt DESC`, params);
+  const cars = await query(`${carSelect} ${whereClause} ORDER BY xe.CreatedAt DESC, xe.MaXe DESC`, params);
   const requestedRange = buildRequestedRange(filters);
   const scheduleMap = await findOpenSchedulesByCarIds(cars.map((car) => car.id));
   const enrichedCars = enrichCars(cars, scheduleMap, requestedRange);
@@ -317,6 +317,7 @@ async function findFeatured(limit = 6) {
         dk.HanDK AS inspectionExpiryDate,
         dk.TrangThai AS inspectionStatus,
         COALESCE(featuredStats.completedContracts, 0) AS completedContracts,
+        COALESCE(featuredStats.completedContracts, 0) AS rentalCount,
         COALESCE(featuredStats.completedRevenue, 0) AS completedRevenue
       FROM Xe xe
       LEFT JOIN DangKiem dk
@@ -334,7 +335,7 @@ async function findFeatured(limit = 6) {
           COUNT(*) AS completedContracts,
           COALESCE(SUM(hd.TongTien), 0) AS completedRevenue
         FROM HopDongThue hd
-        WHERE hd.TrangThai = ?
+        WHERE hd.TrangThai IN (?, ?)
         GROUP BY hd.MaXe
       ) featuredStats ON featuredStats.MaXe = xe.MaXe
       WHERE xe.TrangThai = ?
@@ -344,7 +345,7 @@ async function findFeatured(limit = 6) {
         xe.CreatedAt DESC
       LIMIT ${normalizedLimit}
     `,
-    [CONTRACT_STATUS_COMPLETED, CAR_STATUS_AVAILABLE],
+    [CONTRACT_STATUS_ACTIVE, CONTRACT_STATUS_COMPLETED, CAR_STATUS_AVAILABLE],
   );
   const scheduleMap = await findOpenSchedulesByCarIds(cars.map((car) => car.id));
   return enrichCars(cars, scheduleMap);
