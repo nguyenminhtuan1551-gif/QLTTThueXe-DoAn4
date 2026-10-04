@@ -1,228 +1,251 @@
-# Hệ Thống Quản Lý Cho Thuê Xe (Car Rental Management System)
+# TÀI LIỆU MÔ TẢ QUY TRÌNH NGHIỆP VỤ HỆ THỐNG THUÊ XE
 
-Dự án phát triển hệ thống cho thuê xe ô tô có tài xế và tự lái phục vụ toàn quốc theo kiến trúc 3 tầng độc lập (3-tier architecture): **Backend RESTful API** (Node.js/Express + MySQL), **Khách hàng trên Mobile App** (React Native Expo SDK 54 + TypeScript), và **Quản trị viên trên Web Admin Portal** (Next.js 14 App Router + Tailwind CSS).
+## 1. Tổng quan
 
----
+Hệ thống hỗ trợ khách hàng tìm và đặt thuê xe, theo dõi đơn thuê và tra cứu thông tin. Nhân viên tiếp nhận đơn, điều phối xe, làm thủ tục trả xe, quyết toán và quản lý hoạt động của đội xe.
 
-## 🏗️ Cấu Trúc Tổng Thể Dự Án (Repository Structure)
+Các trạng thái đơn thuê gồm: **Chờ xác nhận**, **Đang hiệu lực**, **Đã hoàn thành** và **Đã hủy**. Xe có thể ở trạng thái **Sẵn sàng**, **Đang thuê** hoặc **Bảo trì**. Xe hết hạn đăng kiểm cũng không được đặt thuê.
 
-```
-QLTTThueXe-DoAn4/
-├── backend/                 # Node.js + Express API (MVC, MySQL, JWT + Session)
-│   ├── app.js               # Khởi tạo Express, CORS, Static Uploads, Route Index
-│   ├── bin/www              # Entrypoint server (Cổng 5000)
-│   ├── common/              # Kết nối MySQL Pool, JWT helper, Password hashing, Geocoding validator
-│   ├── controllers/         # Auth, Car, Contract, Return, Penalty, Inspection, Maintenance, Report
-│   ├── database/
-│   │   ├── schema.sql       # Cấu trúc bảng CSDL (NguoiDung, KhachHang, NhanVien, Xe, DangKiem,...)
-│   │   ├── seed.sql         # Dữ liệu mẫu ban đầu gọn nhẹ (20 xe)
-│   │   ├── seed_1000.sql    # Bộ dữ liệu lớn quy mô toàn quốc (~1000 xe, 1000 khách, 1000 hợp đồng)
-│   │   └── generate_seed_1000.js # Script tự động sinh dữ liệu quy mô lớn
-│   ├── middlewares/         # asyncHandler, authMiddleware (JWT Verification & Role Check)
-│   ├── models/              # Truy vấn cơ sở dữ liệu MySQL (Prepared Statements / Pool Query)
-│   ├── routes/              # Định tuyến API RESTful
-│   └── uploads/             # Ảnh xe (/uploads/car) và ảnh giấy tờ đặt xe (/uploads/booking)
-│
-├── mobile-app/              # React Native Mobile App dành cho Khách Hàng (Expo SDK 54 + TypeScript)
-│   ├── assets/              # Icons, Splash screen
-│   ├── src/
-│   │   ├── api/             # Axios Interceptors tự động gắn Bearer Token
-│   │   ├── components/      # UI components (Button, Input, CarCard, Header có nút Reload 🔄, Badge)
-│   │   ├── constants/       # Theme, Colors, Config tự động tìm IP Metro
-│   │   ├── context/         # AuthContext (JWT Storage AsyncStorage, Session sync)
-│   │   ├── navigation/      # AuthNavigator, MainTabNavigator (5 Tabs responsive), RootNavigator
-│   │   ├── screens/         # Màn hình Mobile:
-│   │   │   ├── auth/        # LoginScreen, RegisterScreen
-│   │   │   ├── home/        # HomeScreen (Carousel xe nổi bật, Hãng xe, Banner)
-│   │   │   ├── cars/        # CarListScreen (Lọc địa chỉ toàn quốc, loại xe, giá), CarDetailScreen
-│   │   │   ├── booking/     # BookingScreen (Khóa CCCD/GPLX theo tài khoản, upload ảnh), BookingSuccessScreen
-│   │   │   ├── rentals/     # MyRentalsScreen (Theo dõi trạng thái), RentalDetailScreen (Biên bản trả & Phạt)
-│   │   │   ├── lookup/      # LookupScreen (Tra cứu hợp đồng độc lập không cần login)
-│   │   │   └── profile/     # ProfileScreen (Hồ sơ, Sửa giấy tờ, CSKH, Đăng xuất)
-│   │   └── types/           # Định nghĩa Types TypeScript
-│   ├── App.tsx              # Khung hiển thị tối ưu đa thiết bị (Mobile, Tablet, Web desktop)
-│   └── package.json
-│
-├── web-admin/               # Web Next.js 14 dành cho Quản Trị Viên & Nhân Viên (Tailwind CSS + Recharts)
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── (admin)/     # Layout Admin bảo vệ bằng JWT & Role (Drawer Sidebar responsive)
-│   │   │   │   ├── dashboard/    # KPI Realtime, Biểu đồ Doanh thu 12 tháng, Donut xe, Cảnh báo
-│   │   │   │   ├── cars/         # Quản lý Đội xe, Thêm/Sửa xe, Upload ảnh, Phân trang
-│   │   │   │   ├── inspection/   # Quản lý Đăng kiểm xe, Cảnh báo sắp/quá hạn, Phân trang
-│   │   │   │   ├── maintenance/  # Quản lý Bảo trì, Tự động điền ngày hoàn thành, Phân trang
-│   │   │   │   ├── contracts/    # Phê duyệt hợp đồng từ App, Gallery ảnh CCCD/Bằng lái, Phân trang
-│   │   │   │   ├── returns/      # Lập phiếu trả xe, Tích hợp phạt vi phạm, Quyết toán, Phân trang
-│   │   │   │   ├── penalties/    # Biên bản phí phạt phát sinh tự động từ trả xe, Phân trang
-│   │   │   │   ├── reports/      # Báo cáo Tài chính, Lợi nhuận thuần từng xe, In PDF / Xuất CSV
-│   │   │   │   ├── customers/    # Danh sách khách hàng, Xem lịch sử toàn bộ các chuyến thuê, Phân trang
-│   │   │   │   ├── contacts/     # Hộp thư CSKH, Cập nhật trạng thái 'Đã phản hồi', Phân trang
-│   │   │   │   ├── employees/    # Quản trị nhân sự, Phân quyền Admin/Staff, Khóa tài khoản, Phân trang
-│   │   │   │   └── settings/     # Cài đặt thông tin công ty, Ngưỡng cảnh báo đăng kiểm
-│   │   │   └── login/       # Đăng nhập Cổng Quản Trị (Hỗ trợ cả /auth/login)
-│   │   ├── components/      # Sidebar (11 modules), Header, Pagination, StatCard, Badge
-│   │   ├── context/         # AuthContext, SidebarContext (Responsive Drawer)
-│   │   ├── services/        # 10 Services Axios kết nối Backend API
-│   │   └── types/           # Định nghĩa Type TypeScript
-│   └── package.json
-│
-└── README.md                # Tài liệu hướng dẫn cài đặt & kịch bản kiểm thử chi tiết
+## 2. Quy trình khách hàng đặt thuê xe
+
+```text
+Khách hàng mở ứng dụng
+        ↓
+Đăng ký hoặc đăng nhập
+        ↓
+Xem, tìm kiếm và lọc xe
+        ↓
+Chọn xe và xem chi tiết
+        ↓
+Kiểm tra lịch xe đã được đặt trước
+        ↓
+Chọn ngày nhận xe, ngày trả dự kiến và điểm nhận xe
+        ↓
+Kiểm tra thông tin hồ sơ, đính kèm ảnh giấy tờ nếu cần
+        ↓
+Xem tổng tiền thuê và tiền cọc
+        ↓
+Gửi yêu cầu thuê xe
+        ↓
+Đơn thuê được tạo ở trạng thái chờ xác nhận
 ```
 
----
+### Bước 1: Đăng ký hoặc đăng nhập
 
-## 🚀 Hướng Dẫn Cài Đặt & Khởi Chạy (Quick Start)
+Khách chưa có tài khoản có thể đăng ký bằng họ tên, số điện thoại, email, mật khẩu, giấy phép lái xe, địa chỉ và thông tin giấy tờ cá nhân. Sau khi đăng nhập, khách có thể bắt đầu tìm và đặt xe.
 
-### 1. Chuẩn bị Cơ sở dữ liệu MySQL
-1. Khởi động **MySQL** trên **XAMPP** hoặc **Laragon** (Cổng mặc định `3306`).
-2. Mở phpMyAdmin hoặc MySQL Client, tạo cơ sở dữ liệu:
-   ```sql
-   CREATE DATABASE IF NOT EXISTS web_thue_xe CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   USE web_thue_xe;
-   ```
-3. Import các file SQL theo đúng thứ tự:
-   * **Bước 3.1**: Import file `backend/database/schema.sql` (Khởi tạo toàn bộ cấu trúc bảng).
-   * **Bước 3.2**: Chọn 1 trong 2 bộ dữ liệu mẫu tùy theo nhu cầu:
-     - **Lựa chọn A (Bộ 1.000 bản ghi lớn toàn quốc - Khuyên dùng để test hiệu năng)**: Import file `backend/database/seed_1000.sql` (Chứa 1.000 xe, 1.000 khách hàng, 1.000 hợp đồng, 1.000 đăng kiểm, 1.000 bảo trì trải dài trên toàn quốc).
-     - **Lựa chọn B (Bộ 20 xe gọn nhẹ ban đầu)**: Import file `backend/database/seed.sql`.
+### Bước 2: Tìm xe phù hợp
 
----
+Khách có thể xem xe nổi bật hoặc danh sách xe cho thuê. Khách tìm xe theo tên, hãng, biển số hoặc khu vực; đồng thời có thể lọc theo kiểu dáng, số chỗ, loại nhiên liệu, giá thuê và trạng thái xe.
 
-### 2. Khởi chạy Backend (`backend/`)
-Mở Terminal 1 và chạy:
-```bash
-cd backend
-npm install
-# Tạo file cấu hình môi trường:
-cp .env.example .env
-# Khởi động máy chủ API:
-npm run dev
-```
-* API Server lắng nghe tại: **`http://localhost:5000`**
+### Bước 3: Xem chi tiết xe
 
----
+Khách xem được hình ảnh, hãng xe, năm sản xuất, biển số, khu vực xe đang có, giá thuê theo ngày, số chỗ, nhiên liệu, kiểu dáng, mô tả và trang bị xe. Khách cũng xem được tình trạng đăng kiểm và các khoảng thời gian xe đã được đặt trước.
 
-### 3. Khởi chạy Web Admin Portal (`web-admin/`)
-Mở Terminal 2 và chạy:
-```bash
-cd web-admin
-npm install
-npm run dev
-```
-* Mở trình duyệt truy cập: **`http://localhost:3000`**
+Xe đang thuê, đang bảo trì hoặc hết hạn đăng kiểm sẽ không thể được đặt thuê.
 
----
+### Bước 4: Chọn lịch thuê và điểm nhận xe
 
-### 4. Khởi chạy Mobile App (`mobile-app/`)
-Mở Terminal 3 và chạy:
-```bash
-cd mobile-app
-npm install --legacy-peer-deps
-npx expo start
-```
-* **Chạy thử trên trình duyệt Web**: Bấm phím **`w`** (mở tại `http://localhost:8081`).
-* **Chạy trên thiết bị thật (iOS / Android)**: Mở ứng dụng **Expo Go** trên điện thoại và quét mã QR trên màn hình.
+Khách chọn ngày nhận xe, ngày trả dự kiến và nhập điểm nhận xe. Hệ thống kiểm tra để thời gian thuê không trùng với lịch đã có của xe. Khách có thể thêm ghi chú cho nhân viên điều phối, ví dụ thời gian giao nhận mong muốn hoặc yêu cầu riêng.
 
----
+### Bước 5: Kiểm tra hồ sơ và giấy tờ
 
-## 🔐 Danh Sách Tài Khoản Thử Nghiệm (Test Accounts)
+Khách kiểm tra họ tên, số điện thoại và email. Thông tin căn cước, giấy phép lái xe và địa chỉ được lấy từ hồ sơ để dùng cho đơn thuê. Khách có thể đính kèm tối đa sáu ảnh giấy tờ bằng cách chụp ảnh hoặc chọn ảnh có sẵn.
 
-| Phân hệ | Vai trò | Tên đăng nhập (Email) | Mật khẩu | Phạm vi sử dụng |
-|---|---|---|:---:|---|
-| **Web Admin** | Quản trị viên cao cấp (`Admin`) | `admin@thuexetudong.vn` | `123456` | Toàn quyền hệ thống, quản lý nhân viên, xóa xe, báo cáo doanh thu |
-| **Web Admin** | Quản trị viên phụ (`Admin`) | `admin@carhire.vn` | `admin123` | Quản trị hệ thống |
-| **Web Admin** | Nhân viên điều phối (`Nhân viên`) | `nv1@thuexetudong.vn` | `123456` | Quản lý đội xe, duyệt hợp đồng, lập phiếu trả xe, bảo trì, CSKH |
-| **Mobile App** | Khách hàng thành viên (`Customer`) | `khachhang1@gmail.com` | `123456` | Đặt xe trực tuyến, xem hợp đồng, tra cứu, gửi góp ý CSKH |
-| **Mobile App** | Khách hàng phụ (`Customer`) | `khach01@khachhang.vn` | `123456` | Đặt xe trực tuyến |
+### Bước 6: Xem chi phí và gửi yêu cầu
 
----
+Hệ thống tính số ngày thuê, giá thuê theo ngày và tổng tiền thuê dự kiến. Tiền cọc giữ xe là **30% tổng tiền thuê**; 70% còn lại được thanh toán khi bàn giao xe.
 
-## 📱 KỊCH BẢN KIỂM THỬ TRÊN MOBILE APP (DÀNH CHO KHÁCH HÀNG)
+Khi khách xác nhận gửi yêu cầu, hệ thống tạo đơn thuê ở trạng thái **Chờ xác nhận**. Khách xem được mã đơn, thông tin chuyến đi, số tiền cọc và hướng dẫn chuyển khoản đặt cọc.
 
-*Đăng nhập bằng tài khoản: `khachhang1@gmail.com` / `123456` (hoặc bấm "Đăng ký ngay" để tạo tài khoản mới).*
+## 3. Quy trình nhân viên tiếp nhận và duyệt đơn
 
-| STT | Chức năng test | Các bước thao tác | Kết quả mong đợi |
-|:---:|---|---|---|
-| **M1** | **Đăng ký tài khoản mới** | 1. Bấm "Đăng ký ngay"<br>2. Nhập: Họ tên, SĐT, Email, Mật khẩu, CCCD, GPLX, Địa chỉ<br>3. Bấm "Đăng Ký Tài Khoản" | - Đăng ký thành công.<br>- Tài khoản & mật khẩu lưu vào bảng `NguoiDung`, hồ sơ lưu vào bảng `KhachHang`.<br>- Tự động đăng nhập và lưu JWT vào AsyncStorage. |
-| **M2** | **Đăng nhập khách hàng** | 1. Nhập `khachhang1@gmail.com`<br>2. Mật khẩu: `123456`<br>3. Bấm "Đăng Nhập" | - Đăng nhập thành công, chuyển hướng vào Trang chủ.<br>- Lưu phiên làm việc an toàn. |
-| **M3** | **Trang chủ & Xe nổi bật** | 1. Xem banner "Thuê Xe Có Tài Xế"<br>2. Xem danh sách xe nổi bật trượt ngang<br>3. Bấm nút 🔄 trên Header để tải lại dữ liệu | - Hiển thị đúng lời chào theo tên khách.<br>- Xe nổi bật tải từ API `/api/cars/featured`.<br>- Badge xe hiển thị đúng (`Sẵn sàng`, `Đang thuê`, hoặc `Đăng kiểm`).<br>- Nút 🔄 làm mới dữ liệu tức thì. |
-| **M4** | **Tìm kiếm xe theo Địa chỉ / Khu vực** | 1. Chuyển sang tab "Danh mục"<br>2. Nhập ô tìm kiếm địa chỉ: *"Cầu Giấy"*, *"Hà Nội"*, hoặc *"TP. Hồ Chí Minh"*<br>3. Bấm vào các chip khu vực: *"📍 Hà Nội"*, *"📍 Đà Nẵng"*, *"📍 TP. Hồ Chí Minh"* | - Lọc ra chính xác các xe thuộc khu vực bãi đỗ đó.<br>- Nhập "Hà Nội" hiển thị các xe tại Hà Nội; chọn thành phố khác hiển thị xe tại thành phố đó.<br>- Không phụ thuộc vào Google Map API. |
-| **M5** | **Xem chi tiết xe & Cảnh báo đăng kiểm** | 1. Bấm vào một xe bình thường<br>2. Bấm vào một xe hết hạn đăng kiểm (Badge "Đăng kiểm")<br>3. Xem mục "Lịch Đã Đặt Trước Của Xe" | - Xe bình thường: hiển thị nút "Đặt Xe Ngay".<br>- Xe hết hạn đăng kiểm: hiển thị cảnh báo đỏ và khóa nút đặt xe để bảo đảm an toàn.<br>- Hiển thị các khoảng ngày xe đã có khách đặt trước. |
-| **M6** | **Đặt xe & Chống trùng lịch** | 1. Chọn ngày nhận và ngày trả xe<br>2. Kiểm tra các dòng CCCD, GPLX, Địa chỉ<br>3. Bấm nút "+ Thêm ảnh"<br>4. Nhập điểm đón ngoài lãnh thổ Việt Nam<br>5. Nhập điểm đón hợp lệ tại Việt Nam và bấm "Đặt xe" | - CCCD, GPLX, Địa chỉ được **tự động điền và khóa cố định theo tài khoản**.<br>- Nếu chọn ngày trùng với lịch xe đã bận: hiển thị cảnh báo đỏ và **vô hiệu hóa nút đặt xe**.<br>- Trên Web/PC: bấm thêm ảnh mở trực tiếp cửa sổ chọn file Windows mượt mà; trên Mobile mở tùy chọn Chụp/Thư viện.<br>- Nếu địa chỉ ngoài Việt Nam: cảnh báo địa chỉ không phục vụ.<br>- Đặt xe thành công $\rightarrow$ Chuyển sang màn hình "Đặt Xe Thành Công" hiển thị Mã HĐ và số tài khoản ngân hàng cọc 30%. |
-| **M7** | **Quản lý Đơn thuê của tôi** | 1. Chuyển sang tab "Đơn thuê"<br>2. Chuyển giữa các tab: *Chờ xác nhận, Đang hiệu lực, Đã hoàn thành*<br>3. Bấm nút 🔄 trên Header<br>4. Bấm vào 1 đơn thuê để xem chi tiết | - Hiển thị danh sách hợp đồng cá nhân của khách.<br>- Nút 🔄 làm mới tiến độ hợp đồng ngay lập tức.<br>- Xem chi tiết: tình trạng xe, lịch trình, tiền cọc, số tiền còn lại, biên bản trả xe và phí phạt (nếu có). |
-| **M8** | **Tra cứu hợp đồng độc lập** | 1. Chuyển sang tab "Tra cứu"<br>2. Nhập Mã HĐ (ví dụ `HD00001`) hoặc SĐT<br>3. Bấm "Tra Cứu Ngay" | - Tra cứu thành công thông tin hợp đồng mà không cần tài khoản đăng nhập. |
-| **M9** | **Tài khoản cá nhân & CSKH** | 1. Chuyển sang tab "Tài khoản"<br>2. Bấm "Cập nhật hồ sơ & giấy tờ"<br>3. Bấm "Gửi yêu cầu hỗ trợ" gửi 1 phản hồi<br>4. Bấm "Đăng Xuất Khỏi Thiết Bị" | - Cập nhật thông tin giấy tờ thành công.<br>- Tin nhắn hỗ trợ gửi lên hệ thống chuyển về mục CSKH của Admin.<br>- Xác nhận đăng xuất mượt mà trên cả Web lẫn Mobile, đưa về màn hình Đăng nhập. |
-
----
-
-## 💻 KỊCH BẢN KIỂM THỬ TRÊN WEB ADMIN PORTAL (DÀNH CHO QUẢN TRỊ VIÊN)
-
-*Đăng nhập bằng tài khoản Admin: `admin@thuexetudong.vn` / `123456`.*
-
-| STT | Chức năng test | Các bước thao tác | Kết quả mong đợi |
-|:---:|---|---|---|
-| **W1** | **Đăng nhập Admin** | 1. Mở `http://localhost:3000/login`<br>2. Nhập `admin@thuexetudong.vn` / `123456`<br>3. Bấm "Đăng Nhập Quản Trị" | - Xác thực qua bảng `NguoiDung`.<br>- Lưu JWT Token và mở Dashboard quản trị. |
-| **W2** | **Dashboard Tổng quan** | 1. Xem 4 thẻ KPI đầu trang<br>2. Xem Biểu đồ Doanh thu 12 tháng (Recharts)<br>3. Xem Biểu đồ Donut trạng thái đội xe<br>4. Xem Trung tâm cảnh báo rủi ro | - Hiển thị số liệu thời gian thực.<br>- Cảnh báo xe sắp hết hạn đăng kiểm và hợp đồng đến hạn trả xe.<br>- Nhật ký hoạt động giao dịch gần nhất. |
-| **W3** | **Quản lý Đội xe (Fleet)** | 1. Vào menu "Quản lý Đội xe"<br>2. Kiểm tra thanh phân trang bên dưới bảng<br>3. Bấm "Thêm Xe Mới" (nhập tên, biển số, giá thuê, khu vực bãi đỗ...)<br>4. Bấm icon Tải lên ảnh xe 📤<br>5. Bấm icon Chỉnh sửa ✎ | - Biển số xe hiển thị nguyên vẹn trên 1 dòng (`whitespace-nowrap`), không bị xuống dòng.<br>- Phân trang mượt mà (10, 20, 50 bản ghi/trang).<br>- Thêm xe mới thành công, hiển thị đúng bãi đỗ.<br>- Tải ảnh đại diện xe từ máy tính hiển thị ngay lập tức.<br>- Admin có quyền xóa xe. |
-| **W4** | **Phê duyệt hợp đồng từ Mobile** | 1. Vào menu "Hợp đồng thuê xe"<br>2. Kiểm tra phân trang bảng hợp đồng<br>3. Tìm đơn thuê vừa đặt từ Mobile App (trạng thái `Chờ xác nhận`)<br>4. Bấm icon Xem 👁️ để xem Gallery ảnh CCCD/GPLX khách gửi<br>5. Bấm nút "Duyệt Đơn" | - Xem phóng to ảnh giấy tờ khách hàng gửi lên từ app.<br>- Bấm Duyệt $\rightarrow$ Hợp đồng chuyển sang `Đang hiệu lực`, **xe tự động chuyển sang trạng thái "Đang thuê"**.<br>- Phân trang hoạt động chính xác. |
-| **W5** | **Trả xe, Xử lý phạt & Quyết toán** | 1. Vào menu "Trả xe & Quyết toán"<br>2. Bấm "Lập Phiếu Trả Xe"<br>3. Chọn hợp đồng đang thuê<br>4. Tích chọn `[✔] Phát sinh phí phạt vi phạm`<br>5. Nhập số tiền phạt (ví dụ 200.000đ) và lý do vi phạm<br>6. Bấm "Hoàn Tất Trả Xe & Quyết Toán" | - Bảng quyết toán tự động: Tiền thuê thực tế - Cọc + **Phí phạt**.<br>- Hợp đồng chuyển sang `Đã hoàn thành`.<br>- **Xe tự động chuyển về trạng thái "Sẵn sàng"**.<br>- **Biên bản phạt tự động được sinh ra trong mục "Biên bản Phí phạt"**.<br>- Bảng phiếu trả xe phân trang đầy đủ. |
-| **W6** | **Tra cứu Biên bản Phí phạt** | 1. Vào menu "Biên bản Phí phạt"<br>2. Xem bản ghi phạt vừa sinh từ bước trả xe<br>3. Kiểm tra biển số xe và thanh phân trang<br>4. Bấm icon Xem chi tiết 👁️ | - Biển số xe và loại vi phạm hiển thị thẳng hàng, không bị ngắt dòng.<br>- Không bị dư thừa nút lập phiếu thủ công (chuẩn luồng nghiệp vụ).<br>- Hiển thị đầy đủ thông tin khách vi phạm, phương tiện, lý do và số tiền.<br>- Phân trang hoạt động mượt mà. |
-| **W7** | **Hồ sơ Đăng kiểm** | 1. Vào menu "Hồ sơ Đăng kiểm"<br>2. Xem danh sách hạn kiểm định của các xe<br>3. Kiểm tra phân trang và biển số xe<br>4. Bấm "Thêm Hồ Sơ Đăng Kiểm" | - Thẻ thống kê phân loại: Còn hạn (Xanh), Sắp hết hạn (Vàng), Hết hạn (Đỏ).<br>- Tự động tính số ngày còn lại của từng xe.<br>- Biển số xe không bị vỡ dòng, phân trang đầy đủ. |
-| **W8** | **Bảo trì & Sửa chữa** | 1. Vào menu "Bảo trì & Sửa chữa"<br>2. Kiểm tra cột "Biển Số" trong bảng<br>3. Bấm "Tạo Phiếu Bảo Trì" cho 1 xe (trạng thái `Đang bảo trì`)<br>4. Bấm nút "Xong" (Hoàn thành) tại một phiếu đang bảo trì | - **Biển số xe hiển thị chuẩn xác trên 1 dòng, không bị ngắt thành 2 dòng**.<br>- Khi tạo phiếu: **xe tự động chuyển sang "Bảo trì"**.<br>- Khi bấm Hoàn thành: **hệ thống tự động điền ngày hoàn thành là ngày hôm nay** và **xe tự động trở về "Sẵn sàng"**.<br>- Phân trang hoạt động mượt mà. |
-| **W9** | **Báo cáo Doanh thu & Lợi nhuận** | 1. Vào menu "Báo cáo Doanh thu"<br>2. Chọn khoảng ngày $\rightarrow$ Bấm "Xem Báo Cáo"<br>3. Kiểm tra phân trang danh sách xe trong báo cáo<br>4. Bấm "Xuất File CSV"<br>5. Bấm "In Báo Cáo" | - Bảng phân tích chi tiết từng xe: Lượt thuê, Doanh thu, Chi phí bảo trì, Thu tiền phạt, Lợi nhuận ròng.<br>- Phân trang danh sách xe trong báo cáo.<br>- Xuất file CSV mở trên Excel chuẩn tiếng Việt UTF-8.<br>- In báo cáo khổ A4 / PDF chuẩn tài liệu doanh nghiệp. |
-| **W10** | **Quản lý Nhân sự (Admin Only)** | 1. Vào menu "Quản lý Nhân sự"<br>2. Bấm "Thêm Nhân Viên" mới<br>3. Bấm icon Khóa 🔒 / Mở khóa 🔓<br>4. Kiểm tra phân trang danh sách nhân viên | - Tài khoản nhân viên mới được tạo đồng bộ vào bảng `NguoiDung`.<br>- Khi khóa tài khoản, nhân viên đó không thể đăng nhập portal.<br>- Phân trang hoạt động chính xác. |
-| **W11** | **Hộp thư Liên hệ (CSKH)** | 1. Vào menu "Hộp thư Liên hệ"<br>2. Tìm tin nhắn gửi từ Mobile App<br>3. Bấm "Đánh dấu xong"<br>4. Kiểm tra phân trang danh sách tin nhắn | - Tin nhắn chuyển trạng thái từ `Mới` $\rightarrow$ `Đã phản hồi`.<br>- Bảng tin nhắn hỗ trợ phân trang mượt mà. |
-| **W12** | **Kiểm tra Responsive Layout** | 1. Thu nhỏ cửa sổ trình duyệt hoặc bật F12 sang iPad / iPhone<br>2. Thử mở Menu Hamburger $\mathbf{\equiv}$ | - Menu trượt mượt mà dạng Drawer bên trái kèm nền mờ.<br>- Bảng biểu và nội dung tự co giãn không bị vỡ layout trên mọi kích thước màn hình. |
-
----
-
-## 🔄 Sơ Đồ Luồng Vận Hành Liên Thông Toàn Hệ Thống (E2E Integration)
-
-```
-[Khách hàng trên Mobile App]
-  │
-  ├─► 1. Đăng ký / Đăng nhập (Lưu tài khoản vào NguoiDung & hồ sơ vào KhachHang)
-  ├─► 2. Tìm xe theo Địa chỉ / Bãi đỗ toàn quốc (Lọc theo tỉnh thành / quận huyện)
-  ├─► 3. Đặt xe trực tuyến:
-  │      - Tự động điền & khóa cố định CCCD, GPLX, Địa chỉ từ tài khoản
-  │      - Kiểm tra chống trùng lịch nếu xe đã có khách khác đặt trước
-  │      - Upload ảnh chụp CCCD/GPLX (Hỗ trợ cả Web PC lẫn Mobile)
-  │
-  ▼
-[Hệ thống Backend API] ──► Lưu HopDongThue ở trạng thái 'Chờ xác nhận'
-  │
-  ▼
-[Quản trị viên / Nhân viên trên Web Admin]
-  │
-  ├─► 4. Kiểm tra đơn tại mục "Hợp đồng thuê xe" (/contracts)
-  │      - Xem Gallery ảnh giấy tờ mà khách gửi lên từ app (click phóng to)
-  │      - Bấm "Duyệt Đơn" ──► Hợp đồng chuyển 'Đang hiệu lực', Xe tự động chuyển 'Đang thuê'
-  │
-  ├─► 5. Bàn giao & Thu hồi xe tại mục "Trả xe & Quyết toán" (/returns):
-  │      - Lập phiếu trả xe, ghi nhận hiện trạng
-  │      - Tích chọn lập biên bản phạt vi phạm nếu có (trả muộn, trầy xước)
-  │      - Tự động tính: Tiền thuê thực tế - Cọc + Phạt = Số tiền thanh toán
-  │      - Hoàn tất ──► Hợp đồng chuyển 'Đã hoàn thành', Xe tự động về 'Sẵn sàng'
-  │                     Biên bản phạt tự động sinh ra trong mục "Biên bản Phí phạt" (/penalties)
-  │
-  └─► 6. Thống kê & Báo cáo Realtime:
-         - Doanh thu, chi phí, lợi nhuận ròng cập nhật ngay lên Dashboard (/dashboard)
-         - Xem Báo cáo tài chính chi tiết từng xe (/reports), in ấn PDF hoặc xuất file CSV
+```text
+Nhân viên nhận đơn thuê mới
+        ↓
+Xem thông tin khách hàng, xe, lịch thuê và giấy tờ
+        ↓
+Kiểm tra thông tin giao nhận
+        ↓
+Duyệt đơn hoặc hủy đơn
+        ↓
+Nếu duyệt: đơn đang hiệu lực
+        ↓
+Xe chuyển sang trạng thái đang thuê
+        ↓
+Điều phối giao xe theo thông tin đã đặt
 ```
 
----
+### Bước 1: Kiểm tra đơn thuê
 
-## 🛡️ Cơ Chế Bảo Mật & Phân Quyền Tập Trung (RBAC)
+Nhân viên mở đơn thuê để xem thông tin khách hàng, xe được chọn, thời gian thuê, điểm nhận xe, ghi chú, tiền cọc, tổng tiền dự kiến và ảnh giấy tờ mà khách đã gửi.
 
-1. **Bảng tài khoản tập trung (`NguoiDung`)**:
-   - Quản lý toàn bộ thông tin đăng nhập, phân vùng (`admin` / `customer`), vai trò và trạng thái khóa tài khoản.
-   - Bảng `KhachHang` và `NhanVien` chỉ lưu hồ sơ thông tin và liên kết qua khóa ngoại `MaND`.
-2. **Bearer JWT Token**:
-   - Mọi yêu cầu API từ Web Admin và Mobile App đều được ký điện tử và xác thực thông qua HTTP Header:
-     ```http
-     Authorization: Bearer <jwt_token>
-     ```
-3. **Phân quyền vai trò**:
-   - `Customer`: Thao tác trên Mobile App (đặt xe, theo dõi hợp đồng, xem biên bản trả xe & phạt).
-   - `Nhân viên`: Điều hành đội xe, duyệt đơn thuê, lập phiếu trả xe & quyết toán phạt, quản lý bảo trì & đăng kiểm.
-   - `Admin`: Toàn quyền hệ thống, quản lý tài khoản nhân viên, xem báo cáo tài chính & lợi nhuận, xóa dữ liệu.
+### Bước 2: Duyệt hoặc hủy đơn
+
+Nếu đủ điều kiện phục vụ, nhân viên duyệt đơn. Đơn chuyển sang **Đang hiệu lực** và xe chuyển sang **Đang thuê**. Nếu không tiếp tục thực hiện, nhân viên hủy đơn; đơn thành **Đã hủy** và xe được đưa về trạng thái sẵn sàng.
+
+Khách có thể theo dõi trạng thái mới của đơn trong phần đơn thuê của mình. Sau khi gửi yêu cầu, khách cũng được thông báo nhân viên điều phối sẽ liên hệ xác nhận điểm giao nhận xe.
+
+## 4. Nhận xe và thời gian đang thuê
+
+```text
+Đơn được duyệt
+        ↓
+Khách xem lại thông tin đơn và lịch nhận xe
+        ↓
+Khách xuất trình giấy tờ gốc
+        ↓
+Nhân viên bàn giao xe theo điểm đã đăng ký
+        ↓
+Xe được ghi nhận đang thuê
+        ↓
+Khách sử dụng xe và theo dõi đơn thuê
+```
+
+Sau khi đơn được duyệt, khách xem lại xe thuê, lịch thuê, điểm nhận xe, tiền cọc và phần tiền còn lại. Khi nhận xe, khách cần xuất trình giấy tờ gốc và giấy phép lái xe hợp lệ. Việc bàn giao được thực hiện theo điểm nhận xe đã đăng ký.
+
+Trong thời gian thuê, khách có thể:
+
+- Xem danh sách đơn của mình, lọc theo trạng thái và tìm theo mã đơn, tên xe, biển số hoặc điểm nhận xe.
+- Xem chi tiết xe, lịch thuê, ghi chú, tiền cọc, tổng tiền, phần tiền còn lại và trạng thái đơn.
+- Xem ảnh giấy tờ đã đính kèm.
+- Tra cứu đơn bằng mã đơn, số điện thoại hoặc số căn cước.
+- Cập nhật hồ sơ cá nhân và gửi yêu cầu hỗ trợ/góp ý.
+
+## 5. Quy trình trả xe và quyết toán
+
+```text
+Khách kết thúc thời gian thuê và trả xe
+        ↓
+Nhân viên chọn đơn đang hiệu lực cần trả xe
+        ↓
+Ghi nhận ngày trả thực tế và tình trạng xe
+        ↓
+Chọn hình thức thanh toán
+        ↓
+Kiểm tra phí phạt phát sinh nếu có
+        ↓
+Tính tiền thuê thực tế - tiền cọc + phí phạt
+        ↓
+Hoàn tất trả xe và quyết toán
+        ↓
+Đơn chuyển sang đã hoàn thành
+        ↓
+Xe chuyển về trạng thái sẵn sàng
+```
+
+### Bước 1: Tiếp nhận xe trả
+
+Nhân viên chọn đơn đang hiệu lực tương ứng, ghi nhận ngày trả thực tế và kiểm tra tình trạng xe khi nhận lại, ví dụ ngoại thất, nội thất hoặc nhiên liệu.
+
+### Bước 2: Quyết toán
+
+Nhân viên chọn hình thức thanh toán: chuyển khoản, tiền mặt, Momo hoặc ZaloPay. Hệ thống tính số ngày thuê thực tế và tổng tiền thuê thực tế, sau đó trừ tiền cọc đã nộp.
+
+### Bước 3: Ghi nhận phí phát sinh
+
+Nếu khách trả xe muộn, xe bị hỏng/trầy xước hoặc có cả hai trường hợp, nhân viên ghi nhận loại vi phạm, số tiền phạt và lý do. Khoản phạt được cộng vào số tiền quyết toán cuối cùng.
+
+### Bước 4: Hoàn thành đơn
+
+Sau khi hoàn tất trả xe, hệ thống lưu biên bản trả xe, đơn chuyển sang **Đã hoàn thành** và xe trở về **Sẵn sàng** để nhận lượt thuê tiếp theo. Khách có thể xem ngày trả thực tế, tình trạng xe, hình thức thanh toán, tổng tiền quyết toán và phí phạt nếu có trong chi tiết đơn.
+
+## 6. Sơ đồ quy trình thuê xe hoàn chỉnh
+
+```text
+KHÁCH HÀNG
+    ↓
+Đăng ký hoặc đăng nhập
+    ↓
+Tìm xe và xem chi tiết
+    ↓
+Chọn lịch thuê, điểm nhận xe và gửi yêu cầu
+    ↓
+Đơn chờ xác nhận
+    ↓
+────────────────────────
+NHÂN VIÊN
+────────────────────────
+    ↓
+Kiểm tra đơn, hồ sơ, giấy tờ và lịch xe
+    ↓
+Duyệt đơn
+    ↓
+Đơn đang hiệu lực, xe đang thuê
+    ↓
+Điều phối giao xe
+    ↓
+────────────────────────
+KHÁCH HÀNG
+────────────────────────
+    ↓
+Nhận xe, sử dụng xe và theo dõi đơn
+    ↓
+Trả xe
+    ↓
+────────────────────────
+NHÂN VIÊN
+────────────────────────
+    ↓
+Kiểm tra xe, lập phiếu trả xe và quyết toán
+    ↓
+Hoàn thành đơn thuê
+    ↓
+Xe sẵn sàng cho lượt thuê tiếp theo
+```
+
+## 7. Các giao diện dành cho khách hàng
+
+### Giao diện đăng nhập và đăng ký
+
+Giao diện này dùng để khách tạo tài khoản, đăng nhập và cung cấp thông tin hồ sơ cần thiết cho việc thuê xe.
+
+### Giao diện trang chủ
+
+Giao diện này dùng để giới thiệu xe nổi bật, hãng xe phổ biến, danh sách xe cho thuê và thông tin dịch vụ. Khách có thể đi nhanh đến danh mục xe hoặc hồ sơ cá nhân.
+
+### Giao diện danh mục xe
+
+Giao diện này dùng để tìm và lọc xe theo tên, hãng, biển số, khu vực, kiểu dáng, số chỗ, nhiên liệu, giá thuê và trạng thái.
+
+### Giao diện chi tiết xe
+
+Giao diện này dùng để khách xem đầy đủ thông tin xe, lịch đã đặt, đăng kiểm, mô tả, trang bị, giá thuê và điều kiện nhận xe trước khi quyết định đặt.
+
+### Giao diện đặt xe và đặt xe thành công
+
+Giao diện này dùng để khách nhập lịch thuê, điểm nhận xe, ghi chú, kiểm tra hồ sơ, đính kèm ảnh giấy tờ và xem chi phí. Sau khi đặt thành công, khách xem mã đơn, tóm tắt chuyến đi, tiền cọc và hướng dẫn thanh toán cọc.
+
+### Giao diện đơn thuê, chi tiết đơn và tra cứu
+
+Giao diện này dùng để khách theo dõi đơn theo từng trạng thái, xem chi tiết thuê/trả xe và tra cứu đơn nhanh bằng mã đơn, số điện thoại hoặc số căn cước.
+
+### Giao diện tài khoản và hỗ trợ
+
+Giao diện này dùng để khách xem hoặc cập nhật hồ sơ, giấy tờ, địa chỉ; đồng thời gửi yêu cầu hỗ trợ hoặc góp ý cho nhân viên.
+
+## 8. Các giao diện dành cho nhân viên và quản trị viên
+
+### Giao diện tổng quan
+
+Giao diện này dùng để theo dõi số lượng xe, xe sẵn sàng, xe đang thuê, đơn đang hiệu lực, khách hàng, doanh thu, cảnh báo đăng kiểm, đơn sắp đến hạn trả và hoạt động gần đây.
+
+### Giao diện quản lý đội xe
+
+Giao diện này dùng để xem, tìm kiếm, lọc, thêm, sửa và cập nhật hình ảnh xe; theo dõi giá thuê, khu vực và trạng thái xe.
+
+### Giao diện quản lý hợp đồng thuê xe
+
+Giao diện này dùng để tiếp nhận đơn, xem hồ sơ/giấy tờ, duyệt hoặc hủy đơn và tạo đơn cho khách đến trực tiếp.
+
+### Giao diện trả xe, quyết toán và phí phạt
+
+Giao diện này dùng để ghi nhận trả xe, tình trạng xe, thanh toán, tiền cọc và phí phát sinh. Giao diện phí phạt dùng để theo dõi loại vi phạm, số tiền, khách hàng, xe và lý do phạt.
+
+### Giao diện đăng kiểm và bảo trì
+
+Giao diện đăng kiểm dùng để theo dõi hạn kiểm định của xe. Giao diện bảo trì dùng để ghi nhận nội dung, chi phí, tiến độ sửa chữa và ngày hoàn thành; xe đang bảo trì sẽ không nhận thuê.
+
+### Giao diện khách hàng, liên hệ, báo cáo, nhân sự và cài đặt
+
+Các giao diện này lần lượt dùng để xem hồ sơ/lịch sử thuê của khách, tiếp nhận phản hồi hỗ trợ, tổng hợp doanh thu - chi phí - tiền phạt - lợi nhuận, quản lý nhân viên và cập nhật thông tin liên hệ cùng các thiết lập cảnh báo của hệ thống.
