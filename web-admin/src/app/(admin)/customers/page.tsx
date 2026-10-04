@@ -84,8 +84,13 @@ export default function CustomersPage() {
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '--';
+    const clean = String(dateStr).slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+      const [y, m, d] = clean.split('-');
+      return `${d}/${m}/${y}`;
+    }
     const parsed = new Date(dateStr);
-    if (isNaN(parsed.getTime())) return dateStr.slice(0, 10);
+    if (isNaN(parsed.getTime())) return clean;
     const d = String(parsed.getDate()).padStart(2, '0');
     const m = String(parsed.getMonth() + 1).padStart(2, '0');
     const y = parsed.getFullYear();

@@ -30,7 +30,17 @@ export const BookingSuccessScreen: React.FC<Props> = ({ route, navigation }) => 
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '--';
-    return dateStr.slice(0, 10);
+    const cleanStr = String(dateStr).slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(cleanStr)) {
+      const [y, m, d] = cleanStr.split('-');
+      return `${d}/${m}/${y}`;
+    }
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return cleanStr;
+    const d = String(date.getDate()).padStart(2, '0');
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const y = date.getFullYear();
+    return `${d}/${m}/${y}`;
   };
 
   const bankAccount = {

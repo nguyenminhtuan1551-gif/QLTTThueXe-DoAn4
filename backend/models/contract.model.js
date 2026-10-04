@@ -62,6 +62,18 @@ async function findPickupImagesByContractIds(contractIds = []) {
   }, new Map());
 }
 
+function toDateString(value) {
+  if (!value) return null;
+  if (typeof value === 'string') return value.slice(0, 10);
+  if (value instanceof Date) {
+    const y = value.getFullYear();
+    const m = String(value.getMonth() + 1).padStart(2, '0');
+    const d = String(value.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  return String(value).slice(0, 10);
+}
+
 async function enrichContracts(contracts = []) {
   if (!contracts.length) {
     return [];
@@ -70,6 +82,8 @@ async function enrichContracts(contracts = []) {
   const imageMap = await findPickupImagesByContractIds(contracts.map((contract) => contract.id));
   return contracts.map((contract) => ({
     ...contract,
+    startDate: toDateString(contract.startDate),
+    expectedReturnDate: toDateString(contract.expectedReturnDate),
     pickupImages: imageMap.get(contract.id) || [],
   }));
 }

@@ -17,6 +17,7 @@ function getPool() {
       connectionLimit: 10,
       namedPlaceholders: false,
       charset: 'utf8mb4',
+      dateStrings: true,
     });
   }
 
